@@ -1,8 +1,22 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [role, setRole] = useState("student");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Navigate based on selected role
+    if (role === "student") {
+      navigate("/student");
+    } else if (role === "teacher") {
+      navigate("/teacher");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0d1117]">
@@ -41,16 +55,20 @@ const Login = () => {
         </div>
 
         {/* FORM */}
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] outline-none"
           />
 
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] outline-none"
           />
 
