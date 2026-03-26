@@ -22,7 +22,7 @@ function App() {
          <Route path="/books" element={<DashboardLayout><Books /></DashboardLayout>} />
          <Route path="/quizzes" element={<DashboardLayout><Quiz /></DashboardLayout>} />
          <Route path="/past-papers" element={<DashboardLayout><PastPapers /></DashboardLayout>} />
-         <Route path="/teacher" element={<TeacherDashboard />} />
+         <Route path="/teacher" element={<DashboardLayout><TeacherDashboard /></DashboardLayout>} />
       </Routes>
     </BrowserRouter>
   );
