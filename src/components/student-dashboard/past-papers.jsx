@@ -1,160 +1,175 @@
 import React, { useState, useEffect } from "react";
 
-// TODO: Replace static books array with API call to get books from database
+// TODO: Replace static pastPapers array with API call to get past papers from database
 // Backend Integration Structure:
-// 1. Books uploaded by admin will be stored in database
-// 2. API endpoint: GET /api/books (with optional query params for filtering)
-// 3. Response format: { books: [...], totalCount: number, currentPage: number, totalPages: number }
-// 4. Admin dashboard will have upload functionality that saves to database
-// 5. This component will fetch and display books dynamically
+// 1. Past papers uploaded by teachers/admins will be stored in database
+// 2. API endpoint: GET /api/past-papers (with optional query params for filtering)
+// 3. Response format: { pastPapers: [...], totalCount: number, currentPage: number, totalPages: number }
+// 4. Teacher/Admin dashboard will have upload functionality that saves to database
+// 5. This component will fetch and display past papers dynamically
 
 // Temporary static data - replace with API call
-const staticBooks = [
+const staticPastPapers = [
   {
-    title: "Biology Form 3 Textbook",
-    author: "Ministry of Education",
-    subject: "Biology",
-    level: "Form 3",
-    offline: true,
-    color: "from-green-600 to-green-900",
-  },
-  {
-    title: "Advanced Mathematics: Calculus",
-    author: "Dr. James Phiri",
+    title: "Mathematics Form 3 Final Exam 2023",
     subject: "Mathematics",
-    level: "Form 4",
-    offline: false,
-    color: "from-orange-500 to-orange-800",
-  },
-  {
-    title: "Chemistry: Organic Compounds",
-    author: "Prof. Grace Banda",
-    subject: "Chemistry",
     level: "Form 3",
-    offline: true,
-    color: "from-purple-600 to-purple-900",
-  },
-  {
-    title: "English Literature Anthology",
-    author: "Various Authors",
-    subject: "English",
-    level: "Form 2",
-    offline: true,
-    color: "from-yellow-400 to-yellow-700",
-  },
-  {
-    title: "Physics: Mechanics and Waves",
-    author: "Dr. Peter Mwale",
-    subject: "Physics",
-    level: "Form 4",
-    offline: true,
+    examType: "Final Exam",
+    year: "2023",
+    marks: 100,
+    time: "2 hours",
+    uploadedBy: "Mr. Thomas Zulu",
+    uploadDate: "2023-12-15",
     color: "from-blue-600 to-blue-900",
   },
   {
-    title: "Geography: Human and Physical",
-    author: "Mrs. Mary Banda",
-    subject: "Geography",
+    title: "Biology Form 4 Mid-term Test 2023",
+    subject: "Biology",
+    level: "Form 4",
+    examType: "Mid-term",
+    year: "2023",
+    marks: 50,
+    time: "1.5 hours",
+    uploadedBy: "Dr. Grace Banda",
+    uploadDate: "2023-10-20",
+    color: "from-green-600 to-green-900",
+  },
+  {
+    title: "Chemistry Form 2 Final Exam 2022",
+    subject: "Chemistry",
     level: "Form 2",
-    offline: false,
+    examType: "Final Exam",
+    year: "2022",
+    marks: 80,
+    time: "2 hours",
+    uploadedBy: "Prof. Grace Banda",
+    uploadDate: "2022-12-10",
+    color: "from-purple-600 to-purple-900",
+  },
+  {
+    title: "Physics Form 4 Mock Exam 2023",
+    subject: "Physics",
+    level: "Form 4",
+    examType: "Mock Exam",
+    year: "2023",
+    marks: 120,
+    time: "2.5 hours",
+    uploadedBy: "Dr. Peter Mwale",
+    uploadDate: "2023-11-05",
+    color: "from-orange-500 to-orange-800",
+  },
+  {
+    title: "English Form 1 Mid-term Test 2023",
+    subject: "English",
+    level: "Form 1",
+    examType: "Mid-term",
+    year: "2023",
+    marks: 60,
+    time: "1 hour",
+    uploadedBy: "Mrs. Mary Banda",
+    uploadDate: "2023-09-15",
+    color: "from-yellow-400 to-yellow-700",
+  },
+  {
+    title: "Geography Form 3 Final Exam 2022",
+    subject: "Geography",
+    level: "Form 3",
+    examType: "Final Exam",
+    year: "2022",
+    marks: 90,
+    time: "2 hours",
+    uploadedBy: "Mrs. Mary Banda",
+    uploadDate: "2022-12-08",
     color: "from-teal-500 to-teal-800",
   },
   {
-    title: "History: Malawi and Africa",
-    author: "Prof. John Chisi",
+    title: "History Form 2 Mock Exam 2023",
     subject: "History",
-    level: "Form 3",
-    offline: true,
+    level: "Form 2",
+    examType: "Mock Exam",
+    year: "2023",
+    marks: 70,
+    time: "1.5 hours",
+    uploadedBy: "Prof. John Chisi",
+    uploadDate: "2023-10-30",
     color: "from-red-600 to-red-900",
   },
   {
-    title: "Civic Education: Rights and Duties",
-    author: "Ministry of Education",
+    title: "Civic Education Form 4 Final Exam 2023",
     subject: "Civic Education",
-    level: "Form 1",
-    offline: true,
+    level: "Form 4",
+    examType: "Final Exam",
+    year: "2023",
+    marks: 75,
+    time: "1.5 hours",
+    uploadedBy: "Ministry of Education",
+    uploadDate: "2023-12-12",
     color: "from-indigo-600 to-indigo-900",
   },
   {
-    title: "Computer Studies: Programming Basics",
-    author: "Mr. Thomas Zulu",
+    title: "Computer Studies Form 3 Mid-term Test 2023",
     subject: "Computer Studies",
-    level: "Form 2",
-    offline: false,
+    level: "Form 3",
+    examType: "Mid-term",
+    year: "2023",
+    marks: 55,
+    time: "1 hour",
+    uploadedBy: "Mr. Thomas Zulu",
+    uploadDate: "2023-09-25",
     color: "from-cyan-500 to-cyan-800",
   },
   {
-    title: "Agriculture: Crop Production",
-    author: "Dr. Grace Nkhoma",
+    title: "Agriculture Form 2 Final Exam 2022",
     subject: "Agriculture",
-    level: "Form 3",
-    offline: true,
+    level: "Form 2",
+    examType: "Final Exam",
+    year: "2022",
+    marks: 85,
+    time: "2 hours",
+    uploadedBy: "Dr. Grace Nkhoma",
+    uploadDate: "2022-12-05",
     color: "from-lime-600 to-lime-900",
   },
   {
-    title: "Business Studies: Entrepreneurship",
-    author: "Mrs. Patricia Gondwe",
+    title: "Business Studies Form 4 Mock Exam 2023",
     subject: "Business Studies",
     level: "Form 4",
-    offline: true,
+    examType: "Mock Exam",
+    year: "2023",
+    marks: 95,
+    time: "2 hours",
+    uploadedBy: "Mrs. Patricia Gondwe",
+    uploadDate: "2023-11-15",
     color: "from-amber-500 to-amber-800",
   },
   {
-    title: "Home Economics: Food and Nutrition",
-    author: "Ms. Elizabeth Phiri",
+    title: "Home Economics Form 1 Mid-term Test 2023",
     subject: "Home Economics",
-    level: "Form 2",
-    offline: false,
+    level: "Form 1",
+    examType: "Mid-term",
+    year: "2023",
+    marks: 45,
+    time: "1 hour",
+    uploadedBy: "Ms. Elizabeth Phiri",
+    uploadDate: "2023-08-20",
     color: "from-rose-500 to-rose-800",
-  },
-  {
-    title: " Chichewa: Literature and Grammar",
-    author: "Mr. Wisdom Kamanga",
-    subject: "Chichewa",
-    level: "Form 1",
-    offline: true,
-    color: "from-emerald-600 to-emerald-900",
-  },
-  {
-    title: "French: Basic Conversation",
-    author: "Madame Sophie Dubois",
-    subject: "French",
-    level: "Form 3",
-    offline: true,
-    color: "from-violet-500 to-violet-800",
-  },
-  {
-    title: "Music: Theory and Practice",
-    author: "Mr. David Singano",
-    subject: "Music",
-    level: "Form 2",
-    offline: false,
-    color: "from-fuchsia-500 to-fuchsia-800",
-  },
-  {
-    title: "Art and Design: Drawing Techniques",
-    author: "Ms. Martha Mhone",
-    subject: "Art",
-    level: "Form 1",
-    offline: true,
-    color: "from-sky-500 to-sky-800",
   },
 ];
 
-const Books = () => {
+const PastPapers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('All Levels');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
-  const [selectedAvailability, setSelectedAvailability] = useState('Availability');
-  const [selectedType, setSelectedType] = useState('All Types');
-  const [books, setBooks] = useState(staticBooks); // Initialize with static data
-  const [loading, setLoading] = useState(false); // Set to false since we have static data
+  const [selectedExamType, setSelectedExamType] = useState('All Types');
+  const [selectedYear, setSelectedYear] = useState('All Years');
+  const [pastPapers, setPastPapers] = useState(staticPastPapers);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const itemsPerPage = 12;
 
-  // TODO: Implement API call to fetch books from database
-  // This will replace the static books array above
-  const fetchBooks = async (filters = {}) => {
+  // TODO: Implement API call to fetch past papers from database
+  const fetchPastPapers = async (filters = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -166,91 +181,86 @@ const Books = () => {
         search: searchTerm,
         level: selectedLevel !== 'All Levels' ? selectedLevel : '',
         subject: selectedSubject !== 'All Subjects' ? selectedSubject : '',
-        availability: selectedAvailability !== 'Availability' ? selectedAvailability.toLowerCase() : '',
-        type: selectedType !== 'All Types' ? selectedType : '',
+        examType: selectedExamType !== 'All Types' ? selectedExamType : '',
+        year: selectedYear !== 'All Years' ? selectedYear : '',
         ...filters
       });
 
-      // API call to get books from database
-      // const response = await fetch(`/api/books?${queryParams}`);
+      // API call to get past papers from database
+      // const response = await fetch(`/api/past-papers?${queryParams}`);
       // const data = await response.json();
 
       // For now, using static data - replace with:
-      // setBooks(data.books);
+      // setPastPapers(data.pastPapers);
       // setTotalItems(data.totalCount);
 
       // Simulate API delay and set static data
       setTimeout(() => {
-        setBooks(staticBooks); // Use static data for now
+        setPastPapers(staticPastPapers);
         setLoading(false);
       }, 500);
 
     } catch (err) {
-      setError('Failed to load books. Please try again.');
+      setError('Failed to load past papers. Please try again.');
       setLoading(false);
-      console.error('Error fetching books:', err);
+      console.error('Error fetching past papers:', err);
     }
   };
 
-  // Fetch books when component mounts or filters change
+  // Fetch past papers when component mounts or filters change
   useEffect(() => {
-    fetchBooks();
-  }, [currentPage, searchTerm, selectedLevel, selectedSubject, selectedAvailability, selectedType]);
+    fetchPastPapers();
+  }, [currentPage, searchTerm, selectedLevel, selectedSubject, selectedExamType, selectedYear]);
 
-  // Filter books based on current filters
+  // Filter past papers based on current filters
   // TODO: Move filtering to backend API for better performance
-  // Example: fetch(`/api/books?search=${searchTerm}&level=${selectedLevel}&subject=${selectedSubject}...`)
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.subject.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredPastPapers = pastPapers.filter(paper => {
+    const matchesSearch = paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         paper.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         paper.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesLevel = selectedLevel === 'All Levels' || book.level === selectedLevel;
-    const matchesSubject = selectedSubject === 'All Subjects' || book.subject === selectedSubject;
-    const matchesAvailability = selectedAvailability === 'Availability' ||
-                               (selectedAvailability === 'Offline' && book.offline) ||
-                               (selectedAvailability === 'Online' && !book.offline);
-    const matchesType = selectedType === 'All Types' ||
-                       (selectedType === 'Textbooks' && book.subject !== 'English') ||
-                       (selectedType === 'Novels' && book.subject === 'English');
+    const matchesLevel = selectedLevel === 'All Levels' || paper.level === selectedLevel;
+    const matchesSubject = selectedSubject === 'All Subjects' || paper.subject === selectedSubject;
+    const matchesExamType = selectedExamType === 'All Types' || paper.examType === selectedExamType;
+    const matchesYear = selectedYear === 'All Years' || paper.year === selectedYear;
 
-    return matchesSearch && matchesLevel && matchesSubject && matchesAvailability && matchesType;
+    return matchesSearch && matchesLevel && matchesSubject && matchesExamType && matchesYear;
   });
 
   // Calculate pagination
-  const totalItems = filteredBooks.length;
+  const totalItems = filteredPastPapers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentBooks = filteredBooks.slice(startIndex, endIndex);
+  const currentPastPapers = filteredPastPapers.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
 
-  const handleDownload = (book) => {
+  const handleDownload = (paper) => {
     // This will be connected to backend API
-    console.log('Downloading:', book.title);
-    // Example: fetch(`/api/books/${book.id}/download`)
+    console.log('Downloading:', paper.title);
+    // Example: fetch(`/api/past-papers/${paper.id}/download`)
   };
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedLevel, selectedSubject, selectedAvailability, selectedType]);
+  }, [searchTerm, selectedLevel, selectedSubject, selectedExamType, selectedYear]);
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
-
       <div className="max-w-6xl mx-auto p-4">
-        
+
         {/* SEARCH SECTION */}
         <div className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg mt-6">
-          
+
           {/* Search Bar */}
           <div className="flex flex-col md:flex-row gap-3 mb-4">
             <input
               type="text"
-              placeholder="Search books..."
+              placeholder="Search past papers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] rounded-lg px-4 py-2 focus:border-[#2ea043] outline-none"
@@ -299,23 +309,27 @@ const Books = () => {
             </select>
 
             <select
-              value={selectedAvailability}
-              onChange={(e) => setSelectedAvailability(e.target.value)}
-              className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-2 rounded-md"
-            >
-              <option>Availability</option>
-              <option>Offline</option>
-              <option>Online</option>
-            </select>
-
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              value={selectedExamType}
+              onChange={(e) => setSelectedExamType(e.target.value)}
               className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-2 rounded-md"
             >
               <option>All Types</option>
-              <option>Textbooks</option>
-              <option>Novels</option>
+              <option>Final Exam</option>
+              <option>Mid-term</option>
+              <option>Mock Exam</option>
+              <option>Test</option>
+            </select>
+
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-2 rounded-md"
+            >
+              <option>All Years</option>
+              <option>2023</option>
+              <option>2022</option>
+              <option>2021</option>
+              <option>2020</option>
             </select>
           </div>
         </div>
@@ -323,14 +337,14 @@ const Books = () => {
         {/* RESULTS HEADER */}
         <div className="flex justify-between items-center mt-6">
           <h2 className="text-xl font-semibold text-[#e6edf3]">
-            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} books
+            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} past papers
           </h2>
         </div>
 
         {/* LOADING STATE */}
         {loading && (
           <div className="text-center py-8">
-            <div className="text-[#e6edf3]">Loading books...</div>
+            <div className="text-[#e6edf3]">Loading past papers...</div>
           </div>
         )}
 
@@ -341,48 +355,53 @@ const Books = () => {
           </div>
         )}
 
-        {/* BOOK DISPLAY */}
+        {/* PAST PAPERS DISPLAY */}
         {!loading && !error && (
           <div className="space-y-4 mt-4">
-            {currentBooks.map((book, index) => (
+            {currentPastPapers.map((paper, index) => (
               <div
                 key={index}
                 className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 hover:border-[#2ea043] transition"
               >
                 <div className="flex items-center gap-4">
-                  {/* Cover */}
+                  {/* Icon */}
                   <div
-                    className={`w-20 h-24 bg-gradient-to-br ${book.color} flex items-center justify-center rounded relative flex-shrink-0`}
+                    className={`w-20 h-24 bg-gradient-to-br ${paper.color} flex items-center justify-center rounded relative flex-shrink-0`}
                   >
-                    <span className="text-2xl opacity-30">📖</span>
-                    <span className={`absolute -top-1 -right-1 text-xs px-1 py-0.5 rounded font-semibold ${
-                      book.offline
-                        ? "bg-[#2ea043] text-white"
-                        : "bg-[#161b22] text-[#e6edf3]"
-                    }`}>
-                      {book.offline ? "📥" : "○"}
+                    <span className="text-2xl opacity-30">📄</span>
+                    <span className="absolute -top-1 -right-1 text-xs px-1 py-0.5 rounded font-semibold bg-[#2ea043] text-white">
+                      📥
                     </span>
                   </div>
 
                   {/* Info */}
                   <div className="flex-1">
                     <h3 className="font-semibold text-[#e6edf3] text-lg">
-                      {book.title}
+                      {paper.title}
                     </h3>
                     <p className="text-sm text-[#6e7681] mb-1">
-                      by {book.author}
+                      Uploaded by {paper.uploadedBy} • {paper.uploadDate}
                     </p>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-[#2ea043] font-semibold">
-                        {book.subject}
+                        {paper.subject}
                       </span>
                       <span className="text-[#6e7681]">
-                        {book.level}
+                        {paper.level}
                       </span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        book.offline ? "bg-[#2ea043] text-white" : "bg-[#161b22] border border-[#21262d] text-[#e6edf3]"
-                      }`}>
-                        {book.offline ? "Offline" : "Online"}
+                      <span className="text-[#6e7681]">
+                        {paper.examType}
+                      </span>
+                      <span className="text-[#6e7681]">
+                        {paper.year}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm mt-1">
+                      <span className="text-[#6e7681]">
+                        📊 {paper.marks} marks
+                      </span>
+                      <span className="text-[#6e7681]">
+                        ⏱️ {paper.time}
                       </span>
                     </div>
                   </div>
@@ -390,10 +409,10 @@ const Books = () => {
                   {/* Buttons */}
                   <div className="flex gap-2">
                     <button className="bg-[#2ea043] text-white px-3 py-2 rounded text-sm hover:bg-[#238636]">
-                      📖 Read
+                      👁️ Preview
                     </button>
                     <button
-                      onClick={() => handleDownload(book)}
+                      onClick={() => handleDownload(paper)}
                       className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]"
                     >
                       ⬇️ Download
@@ -444,7 +463,8 @@ const Books = () => {
                   ? 'text-[#6e7681] cursor-not-allowed'
                   : 'text-[#e6edf3] hover:border-[#2ea043]'
               }`}
-            >»
+            >
+              »
             </button>
           </div>
         )}
@@ -454,4 +474,4 @@ const Books = () => {
   );
 };
 
-export default Books;
+export default PastPapers;

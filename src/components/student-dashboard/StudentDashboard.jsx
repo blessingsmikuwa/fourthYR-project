@@ -1,5 +1,6 @@
  import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useQuizHistory } from "../../hooks/useQuizHistory";
 
 const StudentDashboard = () => {
   // Example: Backend-ready state structure
@@ -8,15 +9,15 @@ const StudentDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { getQuizStats } = useQuizHistory();
+
   // Example: Backend integration would look like this
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // const userResponse = await fetch('/api/user/profile');
-        // const statsResponse = await fetch('/api/student/stats');
-        // const activityResponse = await fetch('/api/student/activity');
+        // Get quiz stats from the hook
+        const quizStats = getQuizStats();
 
-        // For now, using dummy data - replace with actual API calls
         setUserData({
           name: "Thokozani",
           form: "Form 3",
@@ -25,16 +26,20 @@ const StudentDashboard = () => {
 
         setStats([
           { number: "12", label: "Books Read" },
-          { number: "8", label: "Quizzes Completed" },
+          { number: quizStats.totalQuizzes.toString(), label: "Quizzes Completed" },
           { number: "24", label: "Past Papers Accessed" },
-          { number: "85%", label: "Average Score" },
+          { number: `${quizStats.averageScore}%`, label: "Average Score" },
         ]);
 
+        // Generate recent activity from quiz history
+        const recentQuizActivity = quizStats.recentQuizzes.slice(0, 2).map(quiz =>
+          `Completed ${quiz.subject} Quiz - Score ${quiz.score}/${quiz.totalQuestions}`
+        );
+
         setRecentActivity([
-          "Completed Chemistry Quiz - Score 18/20",
+          ...recentQuizActivity,
           "Downloaded Biology Textbook",
           "Accessed Math Past Paper",
-          "Completed English Quiz - Score 16/20",
         ]);
 
         setLoading(false);
@@ -156,15 +161,8 @@ const StudentDashboard = () => {
             ))}
           </div>
         </section>
-        
-        {/* FOOTER */}
-        <footer className="bg-[#161b22] text-[#6e7681] text-center py-6 mt-10">
-          <p className="opacity-90">
-            © 2026 Malawi School Library System
-          </p>
-        </footer>
       </main>
-      </div>
+    </div>
   );
 };
 
