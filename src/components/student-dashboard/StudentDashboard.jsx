@@ -96,26 +96,31 @@ const StudentDashboard = () => {
                 title: "Books Library",
                 desc: "Browse textbooks and novels",
                 icon: "📚",
+                link: "/books",
               },
               {
                 title: "Past Papers",
                 desc: "Access exam papers",
                 icon: "📝",
+                link: "/past-papers",
               },
               {
                 title: "Practice Quizzes",
                 desc: "Test your knowledge",
                 icon: "✏️",
+                link: "/quizzes",
               },
               {
                 title: "Study Materials",
                 desc: "Notes and worksheets",
                 icon: "🎓",
+                link: "/materials",
               },
             ].map((item, i) => (
-              <div
+              <Link
                 key={i}
-                className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden hover:border-[#2ea043] hover:-translate-y-1 transition cursor-pointer"
+                to={item.link}
+                className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden hover:border-[#2ea043] hover:-translate-y-1 transition cursor-pointer block"
               >
                 <div className="h-28 flex items-center justify-center text-3xl bg-[#0d1117]">
                   {item.icon}
@@ -129,7 +134,7 @@ const StudentDashboard = () => {
                     {item.desc}
                   </p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
