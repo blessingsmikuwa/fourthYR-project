@@ -5,6 +5,7 @@ import StudentDashboard from "./components/student-dashboard/StudentDashboard";
 import TeacherDashboard from "./components/teacher-dashboard/TeacherDashboard";
 import Books from "./components/student-dashboard/books.jsx";
 import Quiz from "./components/student-dashboard/quizzes.jsx";
+import PastPapers from "./components/student-dashboard/past-papers.jsx";
 import DashboardLayout from "./components/DashboardLayout";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
          <Route path="/student" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
          <Route path="/books" element={<DashboardLayout><Books /></DashboardLayout>} />
          <Route path="/quizzes" element={<DashboardLayout><Quiz /></DashboardLayout>} />
+         <Route path="/past-papers" element={<DashboardLayout><PastPapers /></DashboardLayout>} />
          <Route path="/teacher" element={<TeacherDashboard />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import Footer from "./Footer";
 
 const Login = () => {
   const [role, setRole] = useState("student");
@@ -19,8 +20,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0d1117]">
-      <div className="w-[360px] bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
+    <div className="min-h-screen flex flex-col bg-[#0d1117]">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-[360px] bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
 
         {/* TITLE */}
         <h2 className="text-xl text-[#e6edf3] font-semibold mb-1">
@@ -88,6 +90,9 @@ const Login = () => {
           </Link>
         </p>
       </div>
+      </div>
+
+      <Footer />
     </div>
   );
 };

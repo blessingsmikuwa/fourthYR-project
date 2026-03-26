@@ -1,12 +1,16 @@
 import React from "react";
 import Header from "./student-dashboard/header";
+import Footer from "./Footer";
 
 const DashboardLayout = ({ children }) => {
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Header />
-      {children}
-    </>
+      <main className="flex-1">
+        {children}
+      </main>
+      <Footer />
+    </div>
   );
 };
 
