@@ -8,15 +8,7 @@ const Header = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isQuickAccessOpen, setIsQuickAccessOpen] = useState(false);
 
-  // Check if current route is teacher or student
-  const isTeacher = location.pathname.startsWith('/teacher') || 
-                     location.pathname === '/resources' ||
-                     location.pathname === '/my-classes' ||
-                     location.pathname === '/teaching-materials' ||
-                     location.pathname === '/student-progress' ||
-                     location.pathname === '/create-quiz' ||
-                     location.pathname === '/upload-material';
-  
+  const isTeacher = location.pathname.startsWith('/teacher');
   const userType = isTeacher ? 'Teacher' : 'Student';
   const userEmail = isTeacher ? 'teacher@edulib.com' : 'student@edulib.com';
 
@@ -25,7 +17,9 @@ const Header = () => {
   };
 
   const handleLogout = () => {
+    // Clear any stored user data
     localStorage.clear();
+    // Navigate to login page
     navigate('/');
   };
 
@@ -76,65 +70,20 @@ const Header = () => {
           <span className="text-[#e6edf3] font-bold text-lg">Edulib</span>
         </div>
 
-        {/* Navigation - Different for Teacher and Student */}
+        {/* Navigation */}
         <nav className="flex gap-8 absolute left-1/2 transform -translate-x-1/2">
-          {isTeacher ? (
-            // Teacher Navigation
+          <Link
+            to={isTeacher ? "/teacher" : "/student"}
+            className={`transition-colors font-medium text-sm ${
+              isActive(isTeacher ? '/teacher' : '/student')
+                ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
+                : 'text-[#e6edf3] hover:text-[#2ea043]'
+            }`}
+          >
+            Home
+          </Link>
+          {!isTeacher && (
             <>
-              <Link
-                to="/teacher"
-                className={`transition-colors font-medium text-sm ${
-                  isActive('/teacher')
-                    ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
-                    : 'text-[#e6edf3] hover:text-[#2ea043]'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/resources"
-                className={`transition-colors font-medium text-sm ${
-                  isActive('/resources')
-                    ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
-                    : 'text-[#e6edf3] hover:text-[#2ea043]'
-                }`}
-              >
-                Resources
-              </Link>
-              <Link
-                to="/my-classes"
-                className={`transition-colors font-medium text-sm ${
-                  isActive('/my-classes')
-                    ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
-                    : 'text-[#e6edf3] hover:text-[#2ea043]'
-                }`}
-              >
-                My Classes
-              </Link>
-              <Link
-                to="/teaching-materials"
-                className={`transition-colors font-medium text-sm ${
-                  isActive('/teaching-materials')
-                    ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
-                    : 'text-[#e6edf3] hover:text-[#2ea043]'
-                }`}
-              >
-                Materials
-              </Link>
-            </>
-          ) : (
-            // Student Navigation
-            <>
-              <Link
-                to="/student"
-                className={`transition-colors font-medium text-sm ${
-                  isActive('/student')
-                    ? 'text-[#2ea043] border-b-2 border-[#2ea043]'
-                    : 'text-[#e6edf3] hover:text-[#2ea043]'
-                }`}
-              >
-                Home
-              </Link>
               <Link
                 to="/books"
                 className={`transition-colors font-medium text-sm ${
@@ -171,12 +120,12 @@ const Header = () => {
 
         {/* Right Side - Quick Access & Profile */}
         <div className="flex items-center gap-4">
-          {/* Quick Access Button - Only for Teachers */}
+          {/* Quick Access Dropdown - Only for Teachers */}
           {isTeacher && (
             <div className="relative quick-access-dropdown">
               <button
                 onClick={toggleQuickAccess}
-                className="flex items-center gap-2 bg-[#2ea043] hover:bg-[#3fb950] transition-colors px-3 py-1.5 rounded-md text-sm font-medium text-white"
+                className="flex items-center gap-2 bg-[#21262d] hover:bg-[#2ea043] transition-colors px-3 py-1.5 rounded-md text-sm font-medium text-[#e6edf3]"
               >
                 <span>⚡</span>
                 <span>Quick Access</span>
