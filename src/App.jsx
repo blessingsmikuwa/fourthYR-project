@@ -1,4 +1,5 @@
  import { BrowserRouter, Routes, Route } from "react-router-dom";
+import useThemeMode from "./hooks/useThemeMode";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import StudentDashboard from "./components/student-dashboard/StudentDashboard";
@@ -14,6 +15,8 @@ import StudentProgress from "./components/teacher-dashboard/StudentProgress.jsx"
 
 
 function App() {
+  useThemeMode();
+
   return (
    
     <BrowserRouter>

@@ -2,7 +2,7 @@ import React from "react";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#161b22] text-[#6e7681] text-center py-6 border-t border-[#21262d]">
+    <footer className="bg-surface text-muted text-center py-6 border-t border-app">
       © 2026 Malawi Edulib System
     </footer>
   );
