@@ -8,7 +8,10 @@ const Signup = () => {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [libraryCardNumber, setLibraryCardNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [school, setSchool] = useState("");
+  const [bio, setBio] = useState("");
+  const [level, setLevel] = useState("Form 1");
   const navigate = useNavigate();
 
   const handleSignup = (e) => {
@@ -20,7 +23,10 @@ const Signup = () => {
       lastName,
       email,
       password,
-      libraryCardNumber
+      dateOfBirth,
+      school,
+      bio,
+      level
     });
 
     // Navigate based on selected role
@@ -108,11 +114,42 @@ const Signup = () => {
           />
 
           <input
-            type="text"
-            placeholder="Library Card Number"
-            value={libraryCardNumber}
-            onChange={(e) => setLibraryCardNumber(e.target.value)}
+            type="date"
+            placeholder="Date of Birth"
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
             className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] focus:border-[#2ea043] outline-none"
+            required
+          />
+
+          {role === "student" && (
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] focus:border-[#2ea043] outline-none"
+              required
+            >
+              <option value="Form 1">Form 1</option>
+              <option value="Form 2">Form 2</option>
+              <option value="Form 3">Form 3</option>
+              <option value="Form 4">Form 4</option>
+            </select>
+          )}
+
+          <input
+            type="text"
+            placeholder="School"
+            value={school}
+            onChange={(e) => setSchool(e.target.value)}
+            className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] focus:border-[#2ea043] outline-none"
+            required
+          />
+
+          <textarea
+            placeholder="Bio"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            className="w-full min-h-[100px] bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] focus:border-[#2ea043] outline-none"
             required
           />
 
