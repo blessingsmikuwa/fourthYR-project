@@ -373,7 +373,7 @@ const Quiz = () => {
     setAnswers({ ...answers, [qIndex]: optionIndex });
   };
 
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     if (Object.keys(answers).length < questions.length) {
       setError("Please answer all questions before submitting.");
       return;
@@ -387,15 +387,42 @@ const Quiz = () => {
     setScore(correct);
 
     if (quizMeta) {
+      const percentage = Math.round((correct / questions.length) * 100);
       const record = {
         id: Date.now().toString(),
         ...quizMeta,
         score: correct,
         total: questions.length,
-        percentage: Math.round((correct / questions.length) * 100),
+        percentage,
         completedAt: new Date().toISOString(),
       };
       setHistory((prev) => [record, ...prev].slice(0, 10));
+
+      // Log to backend
+      try {
+        const token = localStorage.getItem("accessToken");
+        await fetch(`${API_BASE}/activity`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action: "QUIZ_COMPLETED",
+            resourceTitle: `${quizMeta.subject} — ${quizMeta.topic}`,
+            metadata: {
+              subject: quizMeta.subject,
+              level: quizMeta.level,
+              topic: quizMeta.topic,
+              score: correct,
+              total: questions.length,
+              percentage,
+            },
+          }),
+        });
+      } catch {
+        // Silently fail
+      }
     }
   };
 
