@@ -136,14 +136,17 @@ const Signup = () => {
             </select>
           )}
 
-          <input
-            type="text"
-            placeholder="School"
+          <select
             value={school}
             onChange={(e) => setSchool(e.target.value)}
             className="w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2 text-sm text-[#e6edf3] focus:border-[#2ea043] outline-none"
             required
-          />
+          >
+            <option value="">Select School</option>
+            <option value="Dedza Secondary">Dedza Secondary</option>
+            <option value="Blantyre Secondary">Blantyre Secondary</option>
+            <option value="Salima Secondary">Salima Secondary</option>
+          </select>
 
           <textarea
             placeholder="Bio"
