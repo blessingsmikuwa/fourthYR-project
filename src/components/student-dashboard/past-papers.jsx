@@ -36,11 +36,9 @@ const PastPapers = () => {
         if (!res.ok) throw new Error(`Failed to fetch resources: ${res.status}`)
         const data = await res.json()
         const all = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-        // Past papers — resources with form === 'OTHER' or targetAudience containing 'exam'/'paper'
-        // For now show all resources not already shown as books (VIDEO/AUDIO) as potential past papers
-        const filtered = all.filter((r) => r.form === 'OTHER' || r.targetAudience?.toLowerCase().includes('exam'))
-        // Fallback: if nothing matches, show all PDFs
-        setPapers(filtered.length > 0 ? filtered : all.filter((r) => r.type === 'PDF'))
+        // Past papers are resources uploaded with form === 'OTHER' (e.g. Past Paper type in upload form)
+        const filtered = all.filter((r) => r.form === 'OTHER')
+        setPapers(filtered)
       } catch (err) {
         setError(err.message)
       } finally {

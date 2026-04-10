@@ -35,9 +35,9 @@ const Books = () => {
         const res = await fetch(`${API_BASE}/resources`, { headers })
         if (!res.ok) throw new Error(`Failed to fetch resources: ${res.status}`)
         const data = await res.json()
-        // Resources are books — filter by PDF/DOCUMENT type
         const all = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-        const filtered = all.filter((r) => r.type === 'PDF' || r.form === 'DOCUMENT')
+        // Books are resources with form === 'DOCUMENT'
+        const filtered = all.filter((r) => r.form === 'DOCUMENT')
         setBooks(filtered)
       } catch (err) {
         setError(err.message)
