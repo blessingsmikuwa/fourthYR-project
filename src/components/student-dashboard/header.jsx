@@ -8,6 +8,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen]         = useState(false);
   const [isQuickAccessOpen, setIsQuickAccessOpen] = useState(false);
+  const [isBooksMenuOpen, setIsBooksMenuOpen]     = useState(false);
   const { toggleTheme, isDark } = useThemeMode();
 
   const user = (() => {
@@ -24,7 +25,10 @@ const Header = () => {
   const userName  = user.firstName ? `${user.firstName} ${user.lastName}` : userType;
   const initials  = user.firstName ? user.firstName[0].toUpperCase() : '👤';
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/books') return ['/books', '/books/premium'].includes(location.pathname);
+    return location.pathname === path;
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -85,7 +89,40 @@ const Header = () => {
           ) : (
             <>
               {navLink('/student', 'Home')}
-              {navLink('/books', 'Books')}
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setIsBooksMenuOpen(true)}
+                  onClick={() => navigate('/books')}
+                  className={`transition-colors font-medium text-sm inline-flex items-center gap-1 ${isActive('/books') ? 'text-[#2ea043] border-b-2 border-[#2ea043]' : 'text-app hover:text-[#2ea043]'}`}
+                >
+                  Books
+                  <svg className={`w-4 h-4 transition-transform ${isBooksMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isBooksMenuOpen && (
+                  <div
+                    className="absolute left-0 top-full mt-2 w-44 rounded-lg border border-[#21262d] bg-[#0d1117] shadow-lg z-50"
+                    onMouseEnter={() => setIsBooksMenuOpen(true)}
+                    onMouseLeave={() => setIsBooksMenuOpen(false)}
+                  >
+                    <Link
+                      to="/books"
+                      className="block px-4 py-2 text-sm text-app hover:bg-[#161b22] hover:text-[#2ea043]"
+                      onClick={() => setIsBooksMenuOpen(false)}
+                    >
+                      Free Books
+                    </Link>
+                    <Link
+                      to="/books/premium"
+                      className="block px-4 py-2 text-sm text-app hover:bg-[#161b22] hover:text-[#2ea043]"
+                      onClick={() => setIsBooksMenuOpen(false)}
+                    >
+                      Premium Books
+                    </Link>
+                  </div>
+                )}
+              </div>
               {navLink('/past-papers', 'Past Papers')}
               {navLink('/quizzes', 'Quizzes')}
             </>
