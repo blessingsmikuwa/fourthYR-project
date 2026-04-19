@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import api from "../api/api";
 
 const SUBJECT_COLORS = {
   Biology:      { bg: "#1a3a2a", color: "#2ea043" },
@@ -45,14 +44,6 @@ export default function TeacherResources() {
   const [classes, setClasses]       = useState([]);
   const fileInputRef = useRef();
 
-  const getAuthHeaders = (json = true) => {
-    const tok = localStorage.getItem("accessToken");
-    return {
-      ...(json ? { "Content-Type": "application/json" } : {}),
-      ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
-    };
-  };
-
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -61,10 +52,7 @@ export default function TeacherResources() {
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/resources`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error("Failed to fetch resources");
-      const data = await res.json();
-      // Fetch ALL resources (teachers + admins) — no form filter
+      const { data } = await api.get("/resources");
       const all = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       setBooks(all);
     } catch {
@@ -76,15 +64,13 @@ export default function TeacherResources() {
 
   useEffect(() => {
     fetchBooks();
-    fetch(`${API_BASE}/categories`, { headers: getAuthHeaders() })
-      .then((r) => r.json())
-      .then((d) => setCategories(Array.isArray(d) ? d : []))
+    api.get("/categories")
+      .then(({ data }) => setCategories(Array.isArray(data) ? data : []))
       .catch(() => {});
-    fetch(`${API_BASE}/classes`, { headers: getAuthHeaders() })
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d)) {
-          const sorted = [...d].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    api.get("/classes")
+      .then(({ data }) => {
+        if (Array.isArray(data)) {
+          const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
           setClasses(sorted);
         }
       })
@@ -128,16 +114,9 @@ export default function TeacherResources() {
       if (form.categoryId) body.append("categoryId", form.categoryId);
       if (form.classId)    body.append("classId",    form.classId);
 
-      const res = await fetch(`${API_BASE}/resources/create-with-file`, {
-        method: "POST",
-        headers: getAuthHeaders(false),
-        body,
+      await api.post("/resources/create-with-file", body, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d?.message ?? "Upload failed");
-      }
 
       showToast(`"${form.title}" uploaded successfully!`);
       setForm({
@@ -148,27 +127,35 @@ export default function TeacherResources() {
       setShowModal(false);
       await fetchBooks();
     } catch (err) {
-      showToast(err.message, "error");
+      showToast(err.response?.data?.message ?? err.message, "error");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleRequestDelete = async () => {
     try {
-      const res = await fetch(`${API_BASE}/resources/${deleteTarget.id}`, {
-        method: "DELETE", headers,
+      // description must be JSON so the backend can parse resourceId + filePath
+      // to delete from both the database and Supabase storage on approval
+      await api.post("/request", {
+        requestName: `Delete Resource: ${deleteTarget.title}`,
+        fromUser:    "Teacher",
+        type:        "DELETE_RESOURCE",
+        description: JSON.stringify({
+          resourceId: deleteTarget.id,
+          filePath:   deleteTarget.fileUrl,  // Supabase file URL / path
+          bucket:     "online-library",
+        }),
       });
-      if (!res.ok) throw new Error("Delete failed");
-      showToast("Resource removed successfully.");
+
+      showToast("Delete request sent to admin.");
       setDeleteTarget(null);
-      await fetchBooks();
     } catch (err) {
-      showToast(err.message, "error");
+      console.error(err);
+      showToast(err.response?.data?.message ?? err.message, "error");
     }
   };
 
-  // Derive subjects dynamically from loaded data
   const subjects = ["All Subjects", ...new Set(books.map((b) => b.category?.name).filter(Boolean))];
 
   const filtered = books.filter((b) => {
@@ -285,7 +272,7 @@ export default function TeacherResources() {
                       </button>
                       <button onClick={() => setDeleteTarget(book)}
                         className="flex-1 bg-[#3d1a1a] border border-[#f85149] text-[#f85149] text-xs font-semibold py-1.5 rounded hover:bg-[#5a1e1e] transition">
-                        🗑 Remove
+                        🗑 Request Removal
                       </button>
                     </div>
                   </div>
@@ -333,17 +320,14 @@ export default function TeacherResources() {
 
             {/* Form Fields */}
             <div className="space-y-3 mb-5">
-              {/* Title */}
               <input type="text" placeholder="Resource Title *" value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] placeholder-[#6e7681]" />
 
-              {/* Description */}
               <textarea placeholder="Description" value={form.description} rows={2}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] placeholder-[#6e7681] resize-none" />
 
-              {/* Subject + Form Level */}
               <div className="grid grid-cols-2 gap-3">
                 <select value={form.categoryId ?? ""}
                   onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
@@ -355,12 +339,10 @@ export default function TeacherResources() {
                   onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}
                   className="bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
                   <option value="">Select Form</option>
-                  {/* Sorted ascending */}
                   {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
-              {/* Resource Type + Target Audience */}
               <div className="grid grid-cols-2 gap-3">
                 <select value={form.selectedTypeLabel}
                   onChange={(e) => handleTypeChange(e.target.value)}
@@ -376,7 +358,6 @@ export default function TeacherResources() {
                 </select>
               </div>
 
-              {/* Visibility */}
               <select value={form.visibility}
                 onChange={(e) => setForm((f) => ({ ...f, visibility: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
@@ -404,9 +385,9 @@ export default function TeacherResources() {
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-40 p-4">
           <div className="bg-[#161b22] border border-[#f85149] rounded-xl w-full max-w-sm p-6 shadow-2xl">
             <div className="text-3xl mb-3 text-center">🗑️</div>
-            <h2 className="text-lg font-bold text-[#e6edf3] text-center mb-2">Remove Resource?</h2>
+            <h2 className="text-lg font-bold text-[#e6edf3] text-center mb-2">Request Resource Deletion?</h2>
             <p className="text-sm text-[#8b949e] text-center mb-6">
-              Are you sure you want to remove{" "}
+              Are you sure you want to request deletion of{" "}
               <span className="text-[#e6edf3] font-semibold">"{deleteTarget.title}"</span>?
               This cannot be undone.
             </p>
@@ -415,9 +396,9 @@ export default function TeacherResources() {
                 className="flex-1 bg-[#21262d] border border-[#30363d] text-[#e6edf3] font-semibold py-2 rounded-md hover:border-[#6e7681] transition text-sm">
                 Cancel
               </button>
-              <button onClick={handleDelete}
+              <button onClick={handleRequestDelete}
                 className="flex-1 bg-[#f85149] text-white font-semibold py-2 rounded-md hover:bg-[#da3633] transition text-sm">
-                Yes, Remove
+                Send Request
               </button>
             </div>
           </div>
