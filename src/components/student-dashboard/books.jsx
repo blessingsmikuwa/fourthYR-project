@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-const COLORS = [
-  "from-green-600 to-green-900", "from-orange-500 to-orange-800",
-  "from-purple-600 to-purple-900", "from-yellow-400 to-yellow-700",
-  "from-blue-600 to-blue-900", "from-teal-500 to-teal-800",
-  "from-red-600 to-red-900", "from-indigo-600 to-indigo-900",
-  "from-cyan-500 to-cyan-800", "from-lime-600 to-lime-900",
-  "from-amber-500 to-amber-800", "from-rose-500 to-rose-800",
-]
+const SUBJECT_ICONS = {
+  Mathematics: "🧮",
+  Biology: "🧬",
+  Chemistry: "⚗️",
+  Physics: "⚛️",
+  English: "📝",
+  History: "📜",
+  Geography: "🌍",
+  Other: "📚",
+};
 
 const Books = () => {
   const [books, setBooks]               = useState([])
@@ -19,12 +22,33 @@ const Books = () => {
   const [selectedLevel, setSelectedLevel]   = useState('All Levels')
   const [selectedSubject, setSelectedSubject] = useState('All Subjects')
   const [currentPage, setCurrentPage]   = useState(1)
+  const [purchaseLoading, setPurchaseLoading] = useState(false)
   const itemsPerPage = 12
+  const location = useLocation()
+  const showPremium = location.pathname === '/books/premium'
 
   const token = localStorage.getItem("accessToken")
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+
+  const parsePrice = (book) => {
+    const raw = book.price ?? book.amount ?? book.cost ?? book.payment?.amount
+    if (typeof raw === 'number') return raw
+    if (typeof raw === 'string') return parseFloat(raw) || 0
+    return 0
+  }
+
+  const isPaidBook = (book) => parsePrice(book) > 0 || book.isPaid === true || book.paid === true
+  const hasAccess = (book) => book.purchased === true || book.isPurchased === true || book.hasAccess === true
+  const canAccessBook = (book) => !isPaidBook(book) || hasAccess(book)
+
+  const formatPrice = (book) => {
+    const price = parsePrice(book)
+    if (!price) return 'Free'
+    const currency = book.currency ?? book.currencyCode ?? 'Ksh'
+    return `${currency} ${price.toFixed(2)}`
   }
 
   useEffect(() => {
@@ -38,7 +62,68 @@ const Books = () => {
         const all = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
         // Books are resources with form === 'DOCUMENT'
         const filtered = all.filter((r) => r.form === 'DOCUMENT')
-        setBooks(filtered)
+
+        // Add dummy premium books for testing
+        const dummyPremiumBooks = [
+          {
+            id: 'dummy-1',
+            title: 'Advanced Mathematics Guide',
+            description: 'Comprehensive guide to advanced mathematical concepts for Form 4 students.',
+            price: 500,
+            currency: 'MWK',
+            category: { name: 'Mathematics' },
+            targetClass: { name: 'Form 4' },
+            form: 'DOCUMENT',
+            visibility: 'PUBLIC',
+            status: 'PUBLISHED',
+            fileUrl: '#',
+            purchased: false, // Change to true to test purchased state
+          },
+          {
+            id: 'dummy-2',
+            title: 'Chemistry Lab Manual',
+            description: 'Detailed lab experiments and procedures for chemistry students.',
+            price: 750,
+            currency: 'MWK',
+            category: { name: 'Chemistry' },
+            targetClass: { name: 'Form 3' },
+            form: 'DOCUMENT',
+            visibility: 'PUBLIC',
+            status: 'PUBLISHED',
+            fileUrl: '#',
+            purchased: false,
+          },
+          {
+            id: 'dummy-3',
+            title: 'Physics Problem Solver',
+            description: 'Step-by-step solutions to complex physics problems.',
+            price: 600,
+            currency: 'MWK',
+            category: { name: 'Physics' },
+            targetClass: { name: 'Form 4' },
+            form: 'DOCUMENT',
+            visibility: 'PUBLIC',
+            status: 'PUBLISHED',
+            fileUrl: '#',
+            purchased: true, // This one is already purchased
+          },
+          {
+            id: 'dummy-4',
+            title: 'Biology Revision Notes',
+            description: 'Complete revision notes covering all biology topics.',
+            price: 400,
+            currency: 'MWK',
+            category: { name: 'Biology' },
+            targetClass: { name: 'Form 2' },
+            form: 'DOCUMENT',
+            visibility: 'PUBLIC',
+            status: 'PUBLISHED',
+            fileUrl: '#',
+            purchased: false,
+          },
+        ]
+
+        setBooks([...filtered, ...dummyPremiumBooks])
       } catch (err) {
         setError(err.message)
       } finally {
@@ -68,6 +153,36 @@ const Books = () => {
     if (book.fileUrl) window.open(book.fileUrl, '_blank')
   }
 
+  const handlePurchase = async (book) => {
+    const price = parsePrice(book)
+    if (!price) return
+    setPurchaseLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE}/payments/create-checkout-session`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ resourceId: book.id, amount: price }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.message ?? 'Unable to start payment')
+      }
+      const data = await res.json()
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      } else if (data?.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No checkout URL returned from server')
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPurchaseLoading(false)
+    }
+  }
+
   const handleView = async (book) => {
     await logActivity('RESOURCE_VIEWED', book.title)
     if (book.fileUrl) window.open(book.fileUrl, '_blank')
@@ -81,7 +196,8 @@ const Books = () => {
                            book.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesLevel   = selectedLevel === 'All Levels' || book.targetClass?.name === selectedLevel
     const matchesSubject = selectedSubject === 'All Subjects' || book.category?.name === selectedSubject
-    return matchesSearch && matchesLevel && matchesSubject
+    const matchesType    = showPremium ? isPaidBook(book) : !isPaidBook(book)
+    return matchesSearch && matchesLevel && matchesSubject && matchesType
   })
 
   const totalItems  = filtered.length
@@ -121,10 +237,13 @@ const Books = () => {
         </div>
 
         {/* Results count */}
-        <div className="flex justify-between items-center mt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-6">
           <h2 className="text-xl font-semibold">
-            Showing {Math.min(startIndex + 1, totalItems)}–{Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} books
+            {showPremium ? 'Premium Books' : 'Free Books'}
           </h2>
+          <p className="text-sm text-[#8b949e]">
+            Showing {Math.min(startIndex + 1, totalItems)}–{Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} books
+          </p>
         </div>
 
         {loading && <div className="text-center py-8 text-[#e6edf3]">Loading books...</div>}
@@ -139,8 +258,10 @@ const Books = () => {
                 className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 hover:border-[#2ea043] transition">
                 <div className="flex items-center gap-4">
                   {/* Cover */}
-                  <div className={`w-20 h-24 bg-gradient-to-br ${COLORS[index % COLORS.length]} flex items-center justify-center rounded relative flex-shrink-0`}>
-                    <span className="text-2xl opacity-30">📖</span>
+                  <div className="w-20 h-24 bg-[#21262d] border border-[#30363d] flex items-center justify-center rounded relative flex-shrink-0">
+                    <span className="text-3xl">
+                      {SUBJECT_ICONS[book.category?.name] || SUBJECT_ICONS["Other"]}
+                    </span>
                   </div>
                   {/* Info */}
                   <div className="flex-1">
@@ -148,28 +269,41 @@ const Books = () => {
                     {book.description && (
                       <p className="text-sm text-[#6e7681] mb-1 line-clamp-1">{book.description}</p>
                     )}
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-4 text-sm mb-2">
                       {book.category?.name && (
                         <span className="text-[#2ea043] font-semibold">{book.category.name}</span>
                       )}
                       {book.targetClass?.name && (
                         <span className="text-[#6e7681]">{book.targetClass.name}</span>
                       )}
-                      <span className="text-xs px-2 py-0.5 rounded bg-[#2ea043] text-white">
-                        {book.visibility === 'PUBLIC' ? 'Public' : 'School'}
+                      <span className={`text-xs px-2 py-0.5 rounded ${isPaidBook(book) ? 'bg-[#2563eb] text-white' : 'bg-[#2ea043] text-white'}`}>
+                        {isPaidBook(book) ? `Paid • ${formatPrice(book)}` : 'Free'}
                       </span>
+                      {hasAccess(book) && isPaidBook(book) && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-[#16a34a] text-white">Purchased</span>
+                      )}
                     </div>
                   </div>
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <button onClick={() => handleView(book)}
-                      className="bg-[#2ea043] text-white px-3 py-2 rounded text-sm hover:bg-[#238636]">
-                      📖 Read
-                    </button>
-                    <button onClick={() => handleDownload(book)}
-                      className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]">
-                      ⬇️ Download
-                    </button>
+                    {canAccessBook(book) ? (
+                      <>
+                        <button onClick={() => handleView(book)}
+                          className="bg-[#2ea043] text-white px-3 py-2 rounded text-sm hover:bg-[#238636]">
+                          📖 Read
+                        </button>
+                        <button onClick={() => handleDownload(book)}
+                          className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]">
+                          ⬇️ Download
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => handlePurchase(book)}
+                        disabled={purchaseLoading}
+                        className="flex-1 bg-[#2563eb] text-white px-3 py-2 rounded text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60">
+                        {purchaseLoading ? 'Processing…' : 'Pay to access this book'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

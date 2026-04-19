@@ -86,7 +86,8 @@ function App() {
           {/* Dashboard Routes */}
           <Route path="/student"      element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
           <Route path="/books"        element={<DashboardLayout><Books /></DashboardLayout>} />
-          <Route path="/quizzes"      element={<DashboardLayout><Quiz /></DashboardLayout>} />
+          <Route path="/books/premium" element={<DashboardLayout><Books /></DashboardLayout>} />
+         <Route path="/quizzes"      element={<DashboardLayout><Quiz /></DashboardLayout>} />
           <Route path="/past-papers"  element={<DashboardLayout><PastPapers /></DashboardLayout>} />
           <Route path="/teacher"      element={<DashboardLayout><TeacherDashboard /></DashboardLayout>} />
           <Route path="/resources"    element={<DashboardLayout><Resources /></DashboardLayout>} />
