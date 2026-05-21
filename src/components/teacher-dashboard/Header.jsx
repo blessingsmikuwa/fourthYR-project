@@ -53,7 +53,6 @@ const Header = () => {
   const quickAccessItems = [
     { path: "/resources", icon: "📚", label: "Resources" },
     { path: "/my-classes", icon: "🏫", label: "My Classes" },
-    { path: "/teaching-materials", icon: "📖", label: "Teaching Materials" },
     { path: "/student-progress", icon: "📊", label: "Student Progress" },
     { path: "/create-quiz", icon: "✏️", label: "Create Quiz" },
     { path: "/upload-material", icon: "📤", label: "Upload Material" },
