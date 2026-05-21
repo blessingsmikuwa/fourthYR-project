@@ -180,7 +180,7 @@ const TeacherDashboard = () => {
             </div>
           ) : (
             <div className="bg-[#161b22] border border-gray-800 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-4 bg-[#1a3a2a] px-4 py-3 text-sm font-semibold text-white">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#1a3a2a] px-4 py-3 text-sm font-semibold text-white">
                 <div>Title</div>
                 <div>Subject</div>
                 <div>Form</div>
@@ -188,7 +188,7 @@ const TeacherDashboard = () => {
               </div>
               {quizzes.slice(0, 5).map((q) => (
                 <div key={q.id}
-                  className="grid grid-cols-4 px-4 py-4 border-b border-gray-800 last:border-none hover:bg-[#0d1117] transition text-sm text-gray-400">
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-4 py-4 border-b border-gray-800 last:border-none hover:bg-[#0d1117] transition text-sm text-gray-400">
                   <div className="text-white truncate">{q.title}</div>
                   <div>{q.subject}</div>
                   <div>{q.form}</div>

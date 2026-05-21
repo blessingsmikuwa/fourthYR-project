@@ -354,7 +354,7 @@ export default function StudentProgress() {
               <span className="ml-2 text-xs font-normal text-[#f85149]">below 60% average</span>
             </h2>
             <div className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden">
-              <div className="grid grid-cols-4 bg-[#1a3a2a] px-5 py-3 text-xs font-bold text-[#e6edf3]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#1a3a2a] px-5 py-3 text-xs font-bold text-[#e6edf3]">
                 <span>Student</span>
                 <span>Class</span>
                 <span>Average</span>
@@ -366,7 +366,7 @@ export default function StudentProgress() {
                   <button
                     key={s.id}
                     onClick={() => setSelected(s)}
-                    className="w-full grid grid-cols-4 px-5 py-3 border-b border-[#21262d] last:border-none hover:bg-[#0d1117] transition text-left"
+                    className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-5 py-3 border-b border-[#21262d] last:border-none hover:bg-[#0d1117] transition text-left"
                   >
                     <span className="text-sm text-[#e6edf3]">{s.name}</span>
                     <span className="text-sm text-[#6e7681]">{s.form} · {s.class}</span>
