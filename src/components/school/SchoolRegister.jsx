@@ -5,22 +5,24 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
  * SchoolRegister.jsx
  *
  * 3-step flow:
- *   Step 1 — School details form  (name, location, phone)
- *   Step 2 — Contact email + pay  (calls POST /api/school/:id/pay → PayChangu)
- *   Step 3 — Result page          (PayChangu redirects back with ?step=result&status=...&tx_ref=...)
+ *   Step 1 — School details  (name, location, phone)  → POST /api/school/register
+ *   Step 2 — Email + pay     → POST /api/school/:id/pay  gets { secretKey, payload }
+ *                               then browser POSTs directly to api.paychangu.com
+ *   Step 3 — Result page     (PayChangu redirects back with ?step=result&status=...)
+ *
+ * Why the browser calls PayChangu directly:
+ *   Render free-tier blocks all outbound TCP from the server, so the NestJS backend
+ *   cannot reach api.paychangu.com. The browser has no such restriction.
  *
  * Router entry:
  *   <Route path="/school/register" element={<SchoolRegister />} />
  *
- * Required .env:
- *   VITE_API_URL=https://your-api.com   ← NestJS backend
- *
- * Backend .env:
- *   FRONTEND_URL=https://your-frontend.com   ← React app origin (no trailing slash)
- *   APP_BASE_URL=https://your-api.com        ← NestJS origin  (for webhook_url)
+ * Required frontend .env:
+ *   VITE_API_URL=https://your-api.onrender.com
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const PAYCHANGU_API = 'https://api.paychangu.com/payment';
 
 // ── tiny reusable field wrapper ──────────────────────────────────────────────
 const Field = ({ label, required, error, children }) => (
@@ -42,12 +44,11 @@ export default function SchoolRegister() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // PayChangu redirects back with ?step=result&status=success|failed&tx_ref=...
+  // PayChangu / our backend redirects back with these query params
   const urlStep   = searchParams.get('step');
-  const urlStatus = searchParams.get('status');   // success | failed | pending
-  const urlTxRef  = searchParams.get('tx_ref');   // PayChangu appends this automatically
+  const urlStatus = searchParams.get('status'); // success | failed | pending | error
+  const urlTxRef  = searchParams.get('tx_ref');
 
-  // Determine initial step: jump straight to result page when redirected back
   const [step, setStep]         = useState(urlStep === 'result' ? 3 : 1);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
@@ -55,11 +56,11 @@ export default function SchoolRegister() {
   const [schoolId, setSchoolId] = useState(null);
 
   // Step 1 — school details
-  const [details, setDetails]         = useState({ name: '', location: '', phone: '' });
+  const [details, setDetails]           = useState({ name: '', location: '', phone: '' });
   const [detailErrors, setDetailErrors] = useState({});
 
   // Step 2 — contact email
-  const [email, setEmail]       = useState('');
+  const [email, setEmail]         = useState('');
   const [emailError, setEmailError] = useState('');
 
   // ── Fetch registration fee on mount ─────────────────────────────────────────
@@ -67,34 +68,10 @@ export default function SchoolRegister() {
     fetch(`${API_BASE}/school/registration-fee`)
       .then((r) => r.json())
       .then((d) => setFee(d))
-      .catch(() => {
-        // Non-fatal: fee just shows as "Loading…" until available
-      });
+      .catch(() => {});
   }, []);
 
-  // ── If PayChangu redirected us back, verify the payment server-side ─────────
-  // This is belt-and-suspenders on top of the webhook; updates the UI status
-  // to match what the server actually recorded.
-  useEffect(() => {
-    if (step !== 3 || !urlTxRef) return;
-
-    // Only verify when PayChangu says success — avoids unnecessary API calls on
-    // failed/pending redirects, where the webhook already marked the DB.
-    if (urlStatus !== 'success') return;
-
-    fetch(`${API_BASE}/payment/verify/${urlTxRef}`)
-      .then((r) => r.json())
-      .then((data) => {
-        console.log('Verification result:', data);
-        // The result page already shows based on urlStatus; this just logs
-        // confirmation that the DB was updated.
-      })
-      .catch((err) => {
-        console.warn('Could not verify payment on redirect:', err);
-      });
-  }, [step, urlTxRef, urlStatus]);
-
-  // ── Step 1: validate + persist school to DB ──────────────────────────────────
+  // ── Step 1: validate + save school to DB ─────────────────────────────────────
   const validateDetails = () => {
     const errs = {};
     if (!details.name.trim())     errs.name     = 'School name is required';
@@ -133,9 +110,9 @@ export default function SchoolRegister() {
     }
   };
 
-  // ── Step 2: initiate payment → redirect to PayChangu checkout ───────────────
+  // ── Step 2: get payload from backend, then POST to PayChangu from the browser ─
   const validateEmail = () => {
-    if (!email.trim())            { setEmailError('Email is required');       return false; }
+    if (!email.trim())                { setEmailError('Email is required');   return false; }
     if (!/\S+@\S+\.\S+/.test(email)) { setEmailError('Enter a valid email'); return false; }
     setEmailError('');
     return true;
@@ -146,25 +123,47 @@ export default function SchoolRegister() {
     if (!validateEmail()) return;
     setLoading(true);
     setError(null);
+
     try {
-      // POST /school/:id/pay — calls PaymentService.initiateSchoolPayment()
-      // which sets callback_url → /school/register?step=result&status=success
-      //                           return_url  → /school/register?step=result&status=failed
-      const res = await fetch(`${API_BASE}/school/${schoolId}/pay`, {
+      // ── 1. Ask our backend to create the txRef in the DB and return
+      //       the signed payload + secretKey.
+      //       The backend itself does NOT call PayChangu (Render blocks it).
+      const backendRes = await fetch(`${API_BASE}/school/${schoolId}/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d?.message ?? 'Could not start payment');
+
+      if (!backendRes.ok) {
+        const d = await backendRes.json().catch(() => ({}));
+        throw new Error(d?.message ?? 'Could not prepare payment');
       }
-      const data = await res.json();
-      if (data?.checkoutUrl) {
-        // Hand off to PayChangu; it will redirect back to our callback_url / return_url
-        window.location.href = data.checkoutUrl;
+
+      const { secretKey, payload } = await backendRes.json();
+
+      if (!secretKey || !payload) {
+        throw new Error('Invalid response from server');
+      }
+
+      // ── 2. Browser calls PayChangu directly — no Render restriction here.
+      const pcRes = await fetch(PAYCHANGU_API, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${secretKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await pcRes.json();
+
+      if (data?.status === 'success' && data?.data?.checkout_url) {
+        // ── 3. Hand off to the PayChangu checkout page.
+        //       PayChangu will redirect back to callback_url / return_url when done.
+        window.location.href = data.data.checkout_url;
       } else {
-        throw new Error('No checkout URL returned from server');
+        throw new Error(data?.message ?? 'PayChangu did not return a checkout URL');
       }
     } catch (err) {
       setError(err.message);
@@ -174,7 +173,6 @@ export default function SchoolRegister() {
   };
 
   // ── Result page config ───────────────────────────────────────────────────────
-  // Keyed by the `status` query param PayChangu (and our backend) sends back.
   const resultConfig = {
     success: {
       icon: '🎉',
@@ -206,7 +204,6 @@ export default function SchoolRegister() {
     },
   };
 
-  // Fall back to 'error' card for any unrecognised status value
   const result = resultConfig[urlStatus] ?? resultConfig.error;
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -383,7 +380,7 @@ export default function SchoolRegister() {
                 className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold py-2.5 rounded-lg text-sm transition disabled:opacity-50"
               >
                 {loading
-                  ? 'Redirecting to payment…'
+                  ? 'Connecting to payment gateway…'
                   : fee
                   ? `💳 Pay MWK ${fee.amount.toLocaleString()}`
                   : 'Loading…'}
@@ -415,10 +412,7 @@ export default function SchoolRegister() {
             style={{ backgroundColor: result.bg, border: `1px solid ${result.border}` }}
           >
             <div className="text-5xl mb-4">{result.icon}</div>
-            <h2
-              className="text-xl font-bold mb-3"
-              style={{ color: result.color }}
-            >
+            <h2 className="text-xl font-bold mb-3" style={{ color: result.color }}>
               {result.title}
             </h2>
             <p className="text-sm text-[#8b949e] mb-6">{result.message}</p>
@@ -440,10 +434,7 @@ export default function SchoolRegister() {
 
             {urlStatus === 'failed' && (
               <button
-                onClick={() => {
-                  // Full reload clears all state and query params cleanly
-                  window.location.href = '/school/register';
-                }}
+                onClick={() => { window.location.href = '/school/register'; }}
                 className="w-full mt-3 py-2 rounded-lg text-xs text-[#8b949e] border border-[#21262d] hover:border-[#6e7681] transition"
               >
                 Start over
@@ -451,6 +442,7 @@ export default function SchoolRegister() {
             )}
           </div>
         )}
+
       </div>
     </div>
   );
