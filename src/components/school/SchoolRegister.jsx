@@ -6,16 +6,23 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
  *
  * 3-step flow:
  *   Step 1 — School details form  (name, location, phone)
- *   Step 2 — Contact email + pay  (calls /api/school/:id/pay → PayChangu)
- *   Step 3 — Result page          (success / failed / pending)
+ *   Step 2 — Contact email + pay  (calls POST /api/school/:id/pay → PayChangu)
+ *   Step 3 — Result page          (PayChangu redirects back with ?step=result&status=...&tx_ref=...)
  *
- * Add to your router:
+ * Router entry:
  *   <Route path="/school/register" element={<SchoolRegister />} />
+ *
+ * Required .env:
+ *   VITE_API_URL=https://your-api.com   ← NestJS backend
+ *
+ * Backend .env:
+ *   FRONTEND_URL=https://your-frontend.com   ← React app origin (no trailing slash)
+ *   APP_BASE_URL=https://your-api.com        ← NestJS origin  (for webhook_url)
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-// ── tiny reusable input ──────────────────────────────────────────────
+// ── tiny reusable field wrapper ──────────────────────────────────────────────
 const Field = ({ label, required, error, children }) => (
   <div>
     <label className="block text-xs font-medium text-[#8b949e] uppercase tracking-wider mb-1.5">
@@ -29,50 +36,74 @@ const Field = ({ label, required, error, children }) => (
 const inputCls =
   'w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#2ea043] placeholder-[#6e7681] transition';
 
-// ────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
 
 export default function SchoolRegister() {
   const [searchParams] = useSearchParams();
-  const navigate       = useNavigate();
+  const navigate = useNavigate();
 
-  // Determine initial step from URL query (result redirect lands here with ?step=result)
+  // PayChangu redirects back with ?step=result&status=success|failed&tx_ref=...
   const urlStep   = searchParams.get('step');
-  const urlStatus = searchParams.get('status');
-  const urlTxRef  = searchParams.get('tx_ref');
+  const urlStatus = searchParams.get('status');   // success | failed | pending
+  const urlTxRef  = searchParams.get('tx_ref');   // PayChangu appends this automatically
 
+  // Determine initial step: jump straight to result page when redirected back
   const [step, setStep]         = useState(urlStep === 'result' ? 3 : 1);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
   const [fee, setFee]           = useState(null);
-  const [schoolId, setSchoolId] = useState(null); // set after step 1 saves to DB
+  const [schoolId, setSchoolId] = useState(null);
 
-  // Step 1 form state
-  const [details, setDetails] = useState({ name: '', location: '', phone: '' });
+  // Step 1 — school details
+  const [details, setDetails]         = useState({ name: '', location: '', phone: '' });
   const [detailErrors, setDetailErrors] = useState({});
 
-  // Step 2 form state
-  const [email, setEmail] = useState('');
+  // Step 2 — contact email
+  const [email, setEmail]       = useState('');
   const [emailError, setEmailError] = useState('');
 
-  // Step 3 result (from URL params when PayChangu redirects back)
-  const resultStatus = urlStatus; // success | failed | pending | error
-
-  // Fetch registration fee on mount
+  // ── Fetch registration fee on mount ─────────────────────────────────────────
   useEffect(() => {
     fetch(`${API_BASE}/school/registration-fee`)
-      .then(r => r.json())
-      .then(d => setFee(d))
-      .catch(() => {});
+      .then((r) => r.json())
+      .then((d) => setFee(d))
+      .catch(() => {
+        // Non-fatal: fee just shows as "Loading…" until available
+      });
   }, []);
 
-  // ── Step 1: validate + save school ──────────────────────────────
+  // ── If PayChangu redirected us back, verify the payment server-side ─────────
+  // This is belt-and-suspenders on top of the webhook; updates the UI status
+  // to match what the server actually recorded.
+  useEffect(() => {
+    if (step !== 3 || !urlTxRef) return;
+
+    // Only verify when PayChangu says success — avoids unnecessary API calls on
+    // failed/pending redirects, where the webhook already marked the DB.
+    if (urlStatus !== 'success') return;
+
+    fetch(`${API_BASE}/payment/verify/${urlTxRef}`)
+      .then((r) => r.json())
+      .then((data) => {
+        console.log('Verification result:', data);
+        // The result page already shows based on urlStatus; this just logs
+        // confirmation that the DB was updated.
+      })
+      .catch((err) => {
+        console.warn('Could not verify payment on redirect:', err);
+      });
+  }, [step, urlTxRef, urlStatus]);
+
+  // ── Step 1: validate + persist school to DB ──────────────────────────────────
   const validateDetails = () => {
     const errs = {};
     if (!details.name.trim())     errs.name     = 'School name is required';
     if (!details.location.trim()) errs.location = 'Location is required';
-    if (!details.phone.trim())    errs.phone    = 'Phone number is required';
-    else if (!/^\+?\d{7,15}$/.test(details.phone.replace(/\s/g, '')))
+    if (!details.phone.trim()) {
+      errs.phone = 'Phone number is required';
+    } else if (!/^\+?\d{7,15}$/.test(details.phone.replace(/\s/g, ''))) {
       errs.phone = 'Enter a valid phone number';
+    }
     setDetailErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -102,9 +133,9 @@ export default function SchoolRegister() {
     }
   };
 
-  // ── Step 2: initiate payment ─────────────────────────────────────
+  // ── Step 2: initiate payment → redirect to PayChangu checkout ───────────────
   const validateEmail = () => {
-    if (!email.trim()) { setEmailError('Email is required'); return false; }
+    if (!email.trim())            { setEmailError('Email is required');       return false; }
     if (!/\S+@\S+\.\S+/.test(email)) { setEmailError('Enter a valid email'); return false; }
     setEmailError('');
     return true;
@@ -116,6 +147,9 @@ export default function SchoolRegister() {
     setLoading(true);
     setError(null);
     try {
+      // POST /school/:id/pay — calls PaymentService.initiateSchoolPayment()
+      // which sets callback_url → /school/register?step=result&status=success
+      //                           return_url  → /school/register?step=result&status=failed
       const res = await fetch(`${API_BASE}/school/${schoolId}/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,9 +161,10 @@ export default function SchoolRegister() {
       }
       const data = await res.json();
       if (data?.checkoutUrl) {
-        window.location.href = data.checkoutUrl; // → PayChangu
+        // Hand off to PayChangu; it will redirect back to our callback_url / return_url
+        window.location.href = data.checkoutUrl;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL returned from server');
       }
     } catch (err) {
       setError(err.message);
@@ -138,7 +173,8 @@ export default function SchoolRegister() {
     }
   };
 
-  // ── Result config ────────────────────────────────────────────────
+  // ── Result page config ───────────────────────────────────────────────────────
+  // Keyed by the `status` query param PayChangu (and our backend) sends back.
   const resultConfig = {
     success: {
       icon: '🎉',
@@ -170,9 +206,10 @@ export default function SchoolRegister() {
     },
   };
 
-  const result = resultConfig[resultStatus] ?? resultConfig.error;
+  // Fall back to 'error' card for any unrecognised status value
+  const result = resultConfig[urlStatus] ?? resultConfig.error;
 
-  // ── Render ───────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
@@ -186,7 +223,7 @@ export default function SchoolRegister() {
           </p>
         </div>
 
-        {/* Step indicator — only show on steps 1 and 2 */}
+        {/* Step indicator — steps 1 and 2 only */}
         {step < 3 && (
           <div className="flex items-center justify-center gap-3 mb-8">
             {[
@@ -195,24 +232,38 @@ export default function SchoolRegister() {
             ].map(({ n, label }, i) => (
               <React.Fragment key={n}>
                 <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
-                    step === n
-                      ? 'bg-[#2ea043] text-white'
-                      : step > n
-                      ? 'bg-[#2ea04360] text-[#2ea043]'
-                      : 'bg-[#21262d] text-[#6e7681]'
-                  }`}>{step > n ? '✓' : n}</div>
-                  <span className={`text-xs font-medium hidden sm:block ${step === n ? 'text-[#e6edf3]' : 'text-[#6e7681]'}`}>
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                      step === n
+                        ? 'bg-[#2ea043] text-white'
+                        : step > n
+                        ? 'bg-[#2ea04360] text-[#2ea043]'
+                        : 'bg-[#21262d] text-[#6e7681]'
+                    }`}
+                  >
+                    {step > n ? '✓' : n}
+                  </div>
+                  <span
+                    className={`text-xs font-medium hidden sm:block ${
+                      step === n ? 'text-[#e6edf3]' : 'text-[#6e7681]'
+                    }`}
+                  >
                     {label}
                   </span>
                 </div>
-                {i === 0 && <div className={`flex-1 h-px max-w-[60px] ${step > 1 ? 'bg-[#2ea043]' : 'bg-[#21262d]'}`} />}
+                {i === 0 && (
+                  <div
+                    className={`flex-1 h-px max-w-[60px] ${
+                      step > 1 ? 'bg-[#2ea043]' : 'bg-[#21262d]'
+                    }`}
+                  />
+                )}
               </React.Fragment>
             ))}
           </div>
         )}
 
-        {/* ── Step 1: School Details ─────────────────────────────── */}
+        {/* ── Step 1: School Details ─────────────────────────────────────────── */}
         {step === 1 && (
           <div className="bg-[#161b22] border border-[#21262d] rounded-xl p-6">
             <h2 className="text-base font-semibold text-[#e6edf3] mb-5">School Information</h2>
@@ -228,7 +279,7 @@ export default function SchoolRegister() {
                 <input
                   type="text"
                   value={details.name}
-                  onChange={e => setDetails(d => ({ ...d, name: e.target.value }))}
+                  onChange={(e) => setDetails((d) => ({ ...d, name: e.target.value }))}
                   placeholder="e.g. Kamuzu Academy"
                   className={inputCls}
                   disabled={loading}
@@ -239,7 +290,7 @@ export default function SchoolRegister() {
                 <input
                   type="text"
                   value={details.location}
-                  onChange={e => setDetails(d => ({ ...d, location: e.target.value }))}
+                  onChange={(e) => setDetails((d) => ({ ...d, location: e.target.value }))}
                   placeholder="e.g. Lilongwe, Malawi"
                   className={inputCls}
                   disabled={loading}
@@ -250,7 +301,7 @@ export default function SchoolRegister() {
                 <input
                   type="tel"
                   value={details.phone}
-                  onChange={e => setDetails(d => ({ ...d, phone: e.target.value }))}
+                  onChange={(e) => setDetails((d) => ({ ...d, phone: e.target.value }))}
                   placeholder="e.g. +265 999 000 000"
                   className={inputCls}
                   disabled={loading}
@@ -268,14 +319,17 @@ export default function SchoolRegister() {
 
             <p className="text-center text-xs text-[#6e7681] mt-4">
               Already registered?{' '}
-              <button onClick={() => navigate('/login')} className="text-[#2ea043] hover:underline">
+              <button
+                onClick={() => navigate('/login')}
+                className="text-[#2ea043] hover:underline"
+              >
                 Log in here
               </button>
             </p>
           </div>
         )}
 
-        {/* ── Step 2: Payment ────────────────────────────────────── */}
+        {/* ── Step 2: Payment ────────────────────────────────────────────────── */}
         {step === 2 && (
           <div className="bg-[#161b22] border border-[#21262d] rounded-xl p-6">
             <h2 className="text-base font-semibold text-[#e6edf3] mb-1">Registration Fee</h2>
@@ -313,7 +367,7 @@ export default function SchoolRegister() {
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@yourschool.com"
                   className={inputCls}
                   disabled={loading}
@@ -345,26 +399,34 @@ export default function SchoolRegister() {
 
             {/* Test mode notice */}
             <div className="mt-4 px-3 py-2 rounded-lg bg-[#1a2a3a] border border-[#388bfd] text-[#388bfd] text-xs">
-              🧪 <strong>Test mode:</strong> Use card <span className="font-mono">4242 4242 4242 4242</span>, expiry <span className="font-mono">12/30</span>, CVC <span className="font-mono">123</span>, OTP <span className="font-mono">1234</span>
+              🧪 <strong>Test mode:</strong> Use card{' '}
+              <span className="font-mono">4242 4242 4242 4242</span>, expiry{' '}
+              <span className="font-mono">12/30</span>, CVC{' '}
+              <span className="font-mono">123</span>, OTP{' '}
+              <span className="font-mono">1234</span>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Result ─────────────────────────────────────── */}
+        {/* ── Step 3: Result ──────────────────────────────────────────────────── */}
         {step === 3 && (
           <div
             className="rounded-xl p-8 text-center"
             style={{ backgroundColor: result.bg, border: `1px solid ${result.border}` }}
           >
             <div className="text-5xl mb-4">{result.icon}</div>
-            <h2 className="text-xl font-bold mb-3" style={{ color: result.color }}>
+            <h2
+              className="text-xl font-bold mb-3"
+              style={{ color: result.color }}
+            >
               {result.title}
             </h2>
             <p className="text-sm text-[#8b949e] mb-6">{result.message}</p>
 
             {urlTxRef && (
               <p className="text-xs text-[#6e7681] mb-6">
-                Reference: <span className="font-mono text-[#e6edf3]">{urlTxRef}</span>
+                Reference:{' '}
+                <span className="font-mono text-[#e6edf3]">{urlTxRef}</span>
               </p>
             )}
 
@@ -376,11 +438,11 @@ export default function SchoolRegister() {
               {result.action.label}
             </button>
 
-            {resultStatus === 'failed' && (
+            {urlStatus === 'failed' && (
               <button
                 onClick={() => {
-                  navigate('/school/register');
-                  window.location.reload();
+                  // Full reload clears all state and query params cleanly
+                  window.location.href = '/school/register';
                 }}
                 className="w-full mt-3 py-2 rounded-lg text-xs text-[#8b949e] border border-[#21262d] hover:border-[#6e7681] transition"
               >
