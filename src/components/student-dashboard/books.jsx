@@ -15,14 +15,14 @@ const SUBJECT_ICONS = {
 };
 
 const Books = () => {
-  const [books, setBooks]                   = useState([]);
-  const [purchasedIds, setPurchasedIds]     = useState(new Set()); // ← real data
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState(null);
-  const [searchTerm, setSearchTerm]         = useState("");
-  const [selectedLevel, setSelectedLevel]   = useState("All Levels");
+  const [books, setBooks]                     = useState([]);
+  const [purchasedIds, setPurchasedIds]       = useState(new Set());
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState(null);
+  const [searchTerm, setSearchTerm]           = useState("");
+  const [selectedLevel, setSelectedLevel]     = useState("All Levels");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
-  const [currentPage, setCurrentPage]       = useState(1);
+  const [currentPage, setCurrentPage]         = useState(1);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const itemsPerPage = 12;
   const location = useLocation();
@@ -42,9 +42,9 @@ const Books = () => {
     return 0;
   };
 
-  const isPaidBook   = (book) => parsePrice(book) > 0 || book.isPaid === true;
-  const hasAccess    = (book) =>
-    purchasedIds.has(book.id) ||        // ← checked against real DB data
+  const isPaidBook  = (book) => parsePrice(book) > 0 || book.isPaid === true;
+  const hasAccess   = (book) =>
+    purchasedIds.has(book.id) ||
     book.purchased === true ||
     book.isPurchased === true ||
     book.hasAccess === true;
@@ -57,14 +57,25 @@ const Books = () => {
     return `${currency} ${price.toFixed(2)}`;
   };
 
-  // ── Data fetching ─────────────────────────────────────────────────
+  // ── Fetch purchases helper (reused in two places) ─────────────────
+  const fetchPurchases = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/payment/my-purchases`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setPurchasedIds(new Set(data.purchased ?? []));
+      }
+    } catch {}
+  };
+
+  // ── Main data fetch ───────────────────────────────────────────────
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 1. Fetch resources
         const resRes = await fetch(`${API_BASE}/resources`, { headers });
         if (!resRes.ok) throw new Error(`Failed to fetch resources: ${resRes.status}`);
         const resData = await resRes.json();
@@ -73,22 +84,9 @@ const Books = () => {
           : Array.isArray(resData)
           ? resData
           : [];
-        const filtered = all.filter((r) => r.form === "DOCUMENT");
-        setBooks(filtered);
+        setBooks(all.filter((r) => r.form === "DOCUMENT"));
 
-        // 2. Fetch the user's purchased resource IDs (only if logged in)
-        if (token) {
-          try {
-            const purchRes = await fetch(`${API_BASE}/payment/my-purchases`, { headers });
-            if (purchRes.ok) {
-              const purchData = await purchRes.json();
-              // purchData = { purchased: ["uuid1", "uuid2", ...] }
-              setPurchasedIds(new Set(purchData.purchased ?? []));
-            }
-          } catch {
-            // If the call fails we just show no purchases – not a fatal error
-          }
-        }
+        await fetchPurchases();
       } catch (err) {
         setError(err.message);
       } finally {
@@ -97,6 +95,18 @@ const Books = () => {
     };
 
     fetchAll();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Re-fetch purchases if returning from a successful payment ─────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const resourceId = params.get("resourceId");
+
+    if (status === "success" && resourceId && token) {
+      fetchPurchases();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Activity logging ──────────────────────────────────────────────
@@ -134,7 +144,6 @@ const Books = () => {
     setPurchaseLoading(true);
     setError(null);
     try {
-      // POST /payment/create-checkout-session
       const res = await fetch(`${API_BASE}/payment/create-checkout-session`, {
         method: "POST",
         headers,
@@ -147,7 +156,6 @@ const Books = () => {
       }
 
       const data = await res.json();
-      // PaymentService returns { checkoutUrl: "..." }
       const url = data?.checkoutUrl ?? data?.url;
       if (url) {
         window.location.href = url;
@@ -259,9 +267,7 @@ const Books = () => {
         {!loading && !error && (
           <div className="space-y-4 mt-4">
             {currentBooks.length === 0 ? (
-              <div className="text-center py-12 text-[#6e7681]">
-                No books found.
-              </div>
+              <div className="text-center py-12 text-[#6e7681]">No books found.</div>
             ) : (
               currentBooks.map((book, index) => (
                 <div
@@ -293,9 +299,7 @@ const Books = () => {
                           </span>
                         )}
                         {book.targetClass?.name && (
-                          <span className="text-[#6e7681]">
-                            {book.targetClass.name}
-                          </span>
+                          <span className="text-[#6e7681]">{book.targetClass.name}</span>
                         )}
                         <span
                           className={`text-xs px-2 py-0.5 rounded ${
@@ -304,9 +308,7 @@ const Books = () => {
                               : "bg-[#2ea043] text-white"
                           }`}
                         >
-                          {isPaidBook(book)
-                            ? `Paid • ${formatPrice(book)}`
-                            : "Free"}
+                          {isPaidBook(book) ? `Paid • ${formatPrice(book)}` : "Free"}
                         </span>
                         {hasAccess(book) && isPaidBook(book) && (
                           <span className="text-xs px-2 py-0.5 rounded bg-[#16a34a] text-white">
@@ -339,9 +341,7 @@ const Books = () => {
                           disabled={purchaseLoading}
                           className="bg-[#2563eb] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60 whitespace-nowrap"
                         >
-                          {purchaseLoading
-                            ? "Processing…"
-                            : `Buy • ${formatPrice(book)}`}
+                          {purchaseLoading ? "Processing…" : `Buy • ${formatPrice(book)}`}
                         </button>
                       )}
                     </div>

@@ -15,6 +15,7 @@ import MyClasses from "./components/teacher-dashboard/MyClasses.jsx";
 import StudentProgress from "./components/teacher-dashboard/StudentProgress.jsx";
 import { refreshAccessToken } from "./components/utils/AuthUtils";
 import SchoolRegister from "./components/school/SchoolRegister.jsx";
+import PaymentResult from "./components/student-dashboard/PaymentResults.jsx";
 
 // Decodes JWT and returns expiry timestamp in ms
 function getTokenExpiry(token) {
@@ -84,6 +85,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/school/register" element={<SchoolRegister />} />
+          <Route path="/payment/result" element={<PaymentResult />} />
 
           {/* Dashboard Routes */}
           <Route path="/student"      element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />

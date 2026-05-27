@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-/**
- * SchoolRegister.jsx  — fixed version
- *
- * Key fixes vs original:
- *  1. All navigation uses window.location.href instead of navigate() so it
- *     works correctly after PayChangu's full-page redirect (React Router's
- *     internal history is stale at that point).
- *  2. LOGIN_PATH constant — change this ONE value to match your real route.
- *  3. School name is URL-encoded into the callback_url via the backend and
- *     read back from ?school= so it survives the redirect.
- *  4. Step indicator no longer flashes on the result page.
- *
- * Backend change needed in initiateSchoolPayment():
- *   Pass school name when building callbackUrl, e.g.:
- *     const callbackUrl =
- *       `${frontendUrl}/school/register?step=result&status=success&school=${encodeURIComponent(school.name)}`;
- */
 
 // ─── CONFIG — change LOGIN_PATH to match your actual route ──────────────────
 const LOGIN_PATH  = '/login';          // ← FIX THIS to your real login route
