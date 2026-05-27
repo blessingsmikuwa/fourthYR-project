@@ -633,9 +633,7 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
 =======
 >>>>>>> Stashed changes
     let correct = 0;
-    questions.forEach((q, i) => {
-      if (answers[i] === q.correct) correct++;
-    });
+    questions.forEach((q, i) => { if (answers[i] === (q.correct ?? q.answer)) correct++; });
     setScore(correct);
 
     // Save quiz completion record
@@ -662,139 +660,306 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
   };
 
   return (
-    <div className="bg-[#0d1117] min-h-screen p-6 text-[#e6edf3]">
-      
-      {/* HEADER */}
-      <h1 className="text-2xl font-bold text-[#2ea043] mb-6">
-        🧠 AI Quiz Generator
-      </h1>
+    <div className="space-y-4">
+      <div className="flex justify-between text-sm text-[#8b949e] mb-2">
+        <span>{meta.subject} · {meta.level ?? meta.form} · {meta.topic ?? meta.title}</span>
+        <span>{answered} / {questions.length} answered</span>
+      </div>
+      <div className="mb-4"><ProgressBar value={fillPct}/></div>
 
-      {/* GENERATOR */}
-      <div className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg mb-6">
-        <div className="grid md:grid-cols-3 gap-4 mb-4">
-          <select className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none">
-            <option>Subject</option>
-            <option>Biology</option>
-            <option>Math</option>
-          </select>
-
-          <select className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none">
-            <option>Form</option>
-            <option>Form 1</option>
-            <option>Form 2</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="Enter topic..."
-            className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none"
-          />
+      {questions.map((q, i) => (
+        <div key={i} className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
+          <p className="font-semibold mb-4 text-lg">{i+1}. {q.question ?? q.text}</p>
+          <div className="space-y-3">
+            {q.options.map((opt, j) => (
+              <label key={j} onClick={() => select(i, j)}
+                className={`flex items-center gap-3 cursor-pointer p-3 rounded-md border transition ${optionStyle(i,j)}`}>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${answers[i]===j?"border-[#2ea043] bg-[#2ea043]":"border-[#6e7681]"}`}>
+                  {answers[i]===j && <div className="w-2 h-2 bg-white rounded-full"/>}
+                </div>
+                <span>{opt}</span>
+                {score !== null && <span className="ml-auto">{(q.correct??q.answer)===j?"✅":answers[i]===j?"❌":""}</span>}
+              </label>
+            ))}
+          </div>
         </div>
+      ))}
 
-        <button
-          onClick={generateQuiz}
-          className="bg-[#2ea043] text-white px-6 py-3 rounded-lg hover:bg-[#238636] font-semibold"
-        >
-          🤖 Generate Quiz
+      <div className="flex gap-3 justify-center mt-6">
+        {score === null ? (
+          <button onClick={submit}
+            className="bg-[#2ea043] text-white px-8 py-3 rounded-lg hover:bg-[#238636] font-semibold transition">
+            Submit Quiz
+          </button>
+        ) : (
+          <div className="w-full space-y-4">
+            <div className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg text-center">
+              <div className="text-2xl font-bold text-[#2ea043] mb-1">Quiz Complete! 🎉</div>
+              <div className="text-xl">
+                Score: <span className="font-bold text-[#2ea043]">{score}</span> / {questions.length} ({Math.round((score/questions.length)*100)}%)
+              </div>
+              <div className="mb-4 mt-2 max-w-xs mx-auto">
+                <ProgressBar value={Math.round((score/questions.length)*100)}/>
+              </div>
+              <div className="text-sm text-[#6e7681]">
+                {score===questions.length ? "Perfect! Excellent work!" : score>=questions.length*0.7 ? "Great job! Keep it up!" : "Good effort! Try again to improve."}
+              </div>
+              <div className="flex gap-3 justify-center mt-4 flex-wrap">
+                <button onClick={() => setShowRecs(r => !r)}
+                  className="bg-[#21262d] border border-[#30363d] text-[#e6edf3] px-4 py-2 rounded-lg hover:border-[#58a6ff] font-semibold text-sm transition">
+                  🤖 {showRecs ? "Hide" : "View"} AI Tips
+                </button>
+                <button onClick={onDone}
+                  className="bg-[#2ea043] text-white px-6 py-2 rounded-lg hover:bg-[#238636] font-semibold transition">
+                  🔄 Back
+                </button>
+              </div>
+            </div>
+            {showRecs && (
+              <AIRecommendations subject={meta.subject} topic={meta.topic??meta.title} score={score} total={questions.length}/>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AI Tab ────────────────────────────────────────────────────────────────────
+function AITab() {
+  const [subject, setSubject] = useState("");
+  const [level, setLevel]     = useState("");
+  const [topic, setTopic]     = useState("");
+  const [questions, setQ]     = useState([]);
+  const [meta, setMeta]       = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const topics = subject ? (SUBJECT_TOPICS[subject] ?? []) : [];
+
+  const generate = async () => {
+    if (!subject || !level || !topic) {
+      showToast("Please select a subject, level, and topic before generating.", "warning");
+      return;
+    }
+    setLoading(true); setQ([]); setMeta(null);
+    try {
+      const res = await fetch(`${API_BASE}/quizzes/generate`, {
+        method:"POST", headers: authHdr(),
+        body: JSON.stringify({ subject, level, topic }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(()=>({}));
+        showToast(d?.message ?? "Failed to generate quiz. Please try again.", "error");
+        return;
+      }
+      const data = await res.json();
+      setQ(data.questions);
+      setMeta({ subject: data.subject, level: data.level, topic: data.topic });
+    } catch {
+      showToast("Network error. Please check your connection and try again.", "error");
+    } finally { setLoading(false); }
+  };
+
+  if (meta && questions.length > 0) {
+    return <QuizRunner questions={questions} meta={meta} source="AI" onDone={() => { setQ([]); setMeta(null); }}/>;
+  }
+
+  return (
+    <div>
+      <div className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg mb-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <select value={subject} onChange={e => { setSubject(e.target.value); setTopic(""); }} disabled={loading}
+            className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none disabled:opacity-50">
+            <option value="">Select Subject</option>
+            {Object.keys(SUBJECT_TOPICS).map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={level} onChange={e => setLevel(e.target.value)} disabled={loading}
+            className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none disabled:opacity-50">
+            <option value="">Select Level</option>
+            {LEVELS.map(l => <option key={l}>{l}</option>)}
+          </select>
+          <select value={topic} onChange={e => setTopic(e.target.value)} disabled={loading || !subject}
+            className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-3 rounded-md focus:border-[#2ea043] outline-none disabled:opacity-50 lg:col-span-2">
+            <option value="">{subject ? "Select Topic" : "Select a subject first"}</option>
+            {topics.map(t => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <button onClick={generate} disabled={loading}
+          className="bg-[#2ea043] text-white px-6 py-3 rounded-lg hover:bg-[#238636] font-semibold disabled:opacity-50 transition">
+          {loading ? "⏳ Generating..." : "🤖 Generate Quiz"}
         </button>
       </div>
+      {loading && (
+        <div className="text-center py-12">
+          <div className="text-[#8b949e] text-sm">Generating your quiz, please wait...</div>
+          <div className="mt-3 w-8 h-8 border-2 border-[#2ea043] border-t-transparent rounded-full animate-spin mx-auto"/>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* QUESTIONS */}
-      {questions.length > 0 && (
-        <div className="space-y-4">
-          {questions.map((q, i) => (
-            <div key={i} className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
-              <p className="font-semibold mb-4 text-lg text-[#e6edf3]">
-                {i + 1}. {q.question}
-              </p>
+// ── Teacher Quizzes Tab ───────────────────────────────────────────────────────
+function TeacherQuizzesTab() {
+  const [quizzes, setQuizzes]       = useState([]);
+  const [offline, setOffline]       = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [subTab, setSubTab]         = useState("online");
+  const [search, setSearch]         = useState("");
 
-              <div className="space-y-3">
-                {q.options.map((opt, j) => (
-                  <label key={j} className="flex items-center space-x-3 cursor-pointer hover:bg-[#21262d] p-3 rounded-md transition">
-                    <input
-                      type="radio"
-                      name={`q-${i}`}
-                      onChange={() => handleSelect(i, j)}
-                      className="w-4 h-4 text-[#2ea043] bg-[#0d1117] border-[#21262d] focus:ring-[#2ea043] focus:ring-2"
-                    />
-                    <span className="text-[#e6edf3]">{opt}</span>
-                  </label>
-                ))}
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [onRes, offRes] = await Promise.all([
+          fetch(`${API_BASE}/quizzes/available`,         { headers: authHdr() }),
+          fetch(`${API_BASE}/quizzes/available/offline`, { headers: authHdr() }),
+        ]);
+        if (onRes.ok)  setQuizzes(await onRes.json());
+        if (offRes.ok) setOffline(await offRes.json());
+      } catch {
+        showToast("Failed to load quizzes.", "error");
+      } finally { setLoading(false); }
+    };
+    load();
+  }, []);
+
+  if (activeQuiz) {
+    return (
+      <QuizRunner
+        questions={activeQuiz.questions ?? []}
+        meta={{ subject: activeQuiz.subject, level: activeQuiz.form, topic: activeQuiz.title }}
+        source="TEACHER" quizId={activeQuiz.id}
+        onDone={() => setActiveQuiz(null)}
+      />
+    );
+  }
+
+  const onlineFiltered  = quizzes.filter(q => q.title?.toLowerCase().includes(search.toLowerCase()) || q.subject?.toLowerCase().includes(search.toLowerCase()));
+  const offlineFiltered = offline.filter(q => q.title?.toLowerCase().includes(search.toLowerCase()) || q.subject?.toLowerCase().includes(search.toLowerCase()));
+  const formatDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+
+  const QuizCard = ({ quiz, isOffline }) => (
+    <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5 hover:border-[#2ea043] transition">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1a3a2a] text-[#2ea043]">{quiz.subject}</span>
+          <span className="text-xs px-2 py-0.5 rounded border border-[#21262d] text-[#6e7681]">{quiz.form}</span>
+          <span className="text-xs px-2 py-0.5 rounded" style={{backgroundColor:quiz.visibility==="PUBLIC"?"#1a2a3a":"#2a1a3a",color:quiz.visibility==="PUBLIC"?"#58a6ff":"#a371f7"}}>
+            {quiz.visibility==="PUBLIC"?"🌐 Public":"🔒 School"}
+          </span>
+        </div>
+        <span className="text-xs text-[#6e7681]">{quiz.duration}</span>
+      </div>
+      <h3 className="font-semibold text-[#e6edf3] mb-1">{quiz.title}</h3>
+      {quiz.description && <p className="text-xs text-[#6e7681] mb-3 line-clamp-2">{quiz.description}</p>}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[#6e7681]">❓ {quiz.questions?.length ?? 0} questions · 📅 {formatDate(quiz.createdAt)}</span>
+        {isOffline ? (
+          <button onClick={() => window.print()}
+            className="bg-[#1a2a3a] border border-[#58a6ff] text-[#58a6ff] text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#2a3a4a] transition">
+            ⬇️ Print / Download
+          </button>
+        ) : (
+          <button onClick={() => setActiveQuiz(quiz)}
+            className="bg-[#2ea043] text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#3fb950] transition">
+            ▶ Take Quiz
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <input type="text" placeholder="Search quizzes..." value={search} onChange={e=>setSearch(e.target.value)}
+        className="w-full mb-4 border-2 border-[#21262d] bg-[#161b22] text-[#e6edf3] rounded-lg px-4 py-2 focus:border-[#2ea043] outline-none"/>
+      <div className="flex gap-2 mb-6">
+        {[["online","🌐 Online Quizzes"],["offline","📄 Offline / Print"]].map(([key,label]) => (
+          <button key={key} onClick={() => setSubTab(key)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition"
+            style={{backgroundColor:subTab===key?"#2ea043":"#161b22",color:subTab===key?"#fff":"#8b949e",border:`1px solid ${subTab===key?"#2ea043":"#21262d"}`}}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {loading
+        ? <div className="text-center py-12 text-[#8b949e]">Loading quizzes...</div>
+        : subTab==="online"
+          ? onlineFiltered.length===0
+            ? <div className="text-center py-12 text-[#6e7681]">No online quizzes available.</div>
+            : <div className="grid md:grid-cols-2 gap-4">{onlineFiltered.map(q=><QuizCard key={q.id} quiz={q} isOffline={false}/>)}</div>
+          : offlineFiltered.length===0
+            ? <div className="text-center py-12 text-[#6e7681]">No offline quizzes available.</div>
+            : <div className="grid md:grid-cols-2 gap-4">{offlineFiltered.map(q=><QuizCard key={q.id} quiz={q} isOffline={true}/>)}</div>
+      }
+    </div>
+  );
+}
+
+// ── History Tab ───────────────────────────────────────────────────────────────
+function HistoryTab() {
+  const [attempts, setAttempts] = useState([]);
+  const [stats, setStats]       = useState(null);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [aRes, sRes] = await Promise.all([
+          fetch(`${API_BASE}/quizzes/attempts/mine`, { headers: authHdr() }),
+          fetch(`${API_BASE}/quizzes/attempts/stats`, { headers: authHdr() }),
+        ]);
+        if (aRes.ok) setAttempts(await aRes.json());
+        if (sRes.ok) setStats(await sRes.json());
+      } catch {}
+      finally { setLoading(false); }
+    };
+    load();
+  }, []);
+
+  const formatDate = d => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " " +
+           new Date(d).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  };
+
+  if (loading) return <div className="text-center py-12 text-[#8b949e]">Loading history...</div>;
+
+  return (
+    <div>
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label:"Total Quizzes",   value: stats.total },
+            { label:"Average Score",   value: `${stats.avgScore}%` },
+            { label:"AI Quizzes",      value: stats.aiCount },
+            { label:"Teacher Quizzes", value: stats.teacherCount },
+          ].map((s,i) => (
+            <div key={i} className="bg-[#161b22] border border-[#21262d] p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-[#2ea043]">{s.value}</div>
+              <div className="text-xs text-[#6e7681] mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {attempts.length === 0 ? (
+        <div className="text-center py-12 text-[#6e7681]">No quiz history yet. Take a quiz to see results here.</div>
+      ) : (
+        <div className="space-y-3">
+          {attempts.map(a => (
+            <div key={a.id} className="bg-[#161b22] border border-[#21262d] p-4 rounded-lg flex justify-between items-start hover:border-[#2ea043] transition">
+              <div>
+                <div className="font-semibold text-[#e6edf3]">{a.subject}{a.topic ? ` — ${a.topic}` : ""}</div>
+                <div className="text-sm text-[#6e7681]">{a.level} · {a.source==="AI"?"🤖 AI Generated":"👩‍🏫 Teacher Quiz"}</div>
+                <div className="text-xs text-[#6e7681] mt-1">{formatDate(a.completedAt)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-[#2ea043]">{a.score}/{a.total}</div>
+                <div className="text-sm text-[#6e7681]">{a.percentage}%</div>
               </div>
             </div>
           ))}
-
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={submitQuiz}
-              className="bg-[#1f6feb] text-white px-8 py-3 rounded-lg hover:bg-[#388bfd] font-semibold"
-            >
-              Submit Quiz
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* RESULT */}
-      {score !== null && currentQuiz && (
-        <div className="mt-8 bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
-          <div className="text-center mb-4">
-            <div className="text-2xl font-bold text-[#2ea043] mb-2">
-              Quiz Complete! 🎉
-            </div>
-            <div className="text-xl text-[#e6edf3]">
-              Your Score: <span className="font-semibold text-[#2ea043]">{score}</span> / {questions.length}
-              <span className="text-sm text-[#6e7681] ml-2">
-                ({Math.round((score / questions.length) * 100)}%)
-              </span>
-            </div>
-            <div className="text-sm text-[#6e7681] mt-2">
-              {score === questions.length ? "Perfect! Excellent work!" :
-               score >= questions.length * 0.7 ? "Great job! Keep it up!" :
-               "Good effort! Try again to improve your score."}
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 text-center">
-            <div className="bg-[#0d1117] p-3 rounded">
-              <div className="text-sm text-[#6e7681]">Subject</div>
-              <div className="font-semibold text-[#e6edf3]">{currentQuiz.subject}</div>
-            </div>
-            <div className="bg-[#0d1117] p-3 rounded">
-              <div className="text-sm text-[#6e7681]">Level</div>
-              <div className="font-semibold text-[#e6edf3]">{currentQuiz.level}</div>
-            </div>
-            <div className="bg-[#0d1117] p-3 rounded">
-              <div className="text-sm text-[#6e7681]">Completed</div>
-              <div className="font-semibold text-[#e6edf3]">{new Date().toLocaleDateString()}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* QUIZ HISTORY */}
-      {quizHistory.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold text-[#e6edf3] mb-4">Recent Quiz History</h2>
-          <div className="space-y-3">
-            {quizHistory.slice(0, 5).map((quiz) => (
-              <div key={quiz.id} className="bg-[#161b22] border border-[#21262d] p-4 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold text-[#e6edf3]">{quiz.subject} - {quiz.topic}</div>
-                    <div className="text-sm text-[#6e7681]">{quiz.level} • {quiz.totalQuestions} questions</div>
-                    <div className="text-xs text-[#6e7681] mt-1">
-                      {new Date(quiz.completedAt).toLocaleDateString()} at {new Date(quiz.completedAt).toLocaleTimeString()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-[#2ea043]">{quiz.score}/{quiz.totalQuestions}</div>
-                    <div className="text-sm text-[#6e7681]">{quiz.percentage}%</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
