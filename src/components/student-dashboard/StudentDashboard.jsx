@@ -1,7 +1,253 @@
  import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { useQuizHistory } from "../../hooks/useQuizHistory";
 
+=======
+=======
+>>>>>>> Stashed changes
+import {
+  FiBookOpen,
+  FiFileText,
+  FiEdit3,
+  FiBookmark,
+  FiBarChart2,
+  FiClock,
+  FiDownload,
+  FiCheckCircle,
+  FiEye,
+  FiTrendingUp,
+  FiArrowRight,
+  FiX,
+} from "react-icons/fi";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+
+const SUBJECT_COLORS = {
+  Biology: "#2ea043", Mathematics: "#1f6feb", Chemistry: "#a371f7",
+  Physics: "#f0883e", English: "#e3b341", Geography: "#58a6ff",
+  History: "#da3633", "Civic Education": "#56d364", "Computer Studies": "#79c0ff",
+  Agriculture: "#2ea043", "Business Studies": "#f0883e", Chichewa: "#e3b341",
+};
+
+// ── Animated Progress Bar ─────────────────────────────────────────────────────
+function ProgressBar({ value, color = "#2ea043", height = "h-2" }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => { const t = setTimeout(() => setWidth(value), 120); return () => clearTimeout(t); }, [value]);
+  const getColor = p => p >= 75 ? (color || "#2ea043") : p >= 50 ? "#e3b341" : "#da3633";
+  return (
+    <div className={`w-full bg-[#21262d] rounded-full ${height} overflow-hidden`}>
+      <div className={`${height} rounded-full transition-all duration-700 ease-out`}
+        style={{ width: `${width}%`, backgroundColor: getColor(value) }} />
+    </div>
+  );
+}
+
+// ── Subject Detail Modal ──────────────────────────────────────────────────────
+function SubjectModal({ subject, attempts, onClose }) {
+  const color = SUBJECT_COLORS[subject] || "#2ea043";
+  const sorted = [...attempts].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+  const byTopic = {};
+  attempts.forEach(a => { if (!byTopic[a.topic]) byTopic[a.topic] = []; byTopic[a.topic].push(a); });
+  const avg = Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length);
+  const best = Math.max(...attempts.map(a => a.percentage));
+
+  return (
+    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0d1117] border border-[#21262d] rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-5 sticky top-0 bg-[#0d1117] border-b border-[#21262d] flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold" style={{ color }}>{subject}</h2>
+            <div className="flex gap-3 text-xs text-[#6e7681] mt-0.5">
+              <span>{attempts.length} attempts</span>
+              <span>Avg: <span className="font-bold text-[#e6edf3]">{avg}%</span></span>
+              <span>Best: <span className="font-bold text-[#e6edf3]">{best}%</span></span>
+            </div>
+          </div>
+          {/* ✕ → FiX icon */}
+          <button onClick={onClose} className="text-[#6e7681] hover:text-white leading-none">
+            <FiX size={18} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Overall score bar */}
+          <div>
+            <div className="flex justify-between text-xs mb-2">
+              <span className="text-[#6e7681]">Overall average</span>
+              <span className="font-bold text-[#e6edf3]">{avg}%</span>
+            </div>
+            <ProgressBar value={avg} color={color} height="h-3" />
+          </div>
+
+          {/* Score history chart */}
+          {sorted.length > 1 && (
+            <div>
+              <h3 className="text-xs font-bold text-[#6e7681] mb-2">Score History</h3>
+              <div className="flex items-end gap-1.5 h-20 bg-[#161b22] rounded-lg px-3 py-2">
+                {sorted.slice(-12).map((a, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${a.percentage}% — ${a.topic}`}>
+                    <div className="w-full rounded-t transition-all"
+                      style={{ height: `${Math.max(4, a.percentage * 0.6)}px`, backgroundColor: color, opacity: 0.6 + (i / sorted.length) * 0.4 }} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] text-[#6e7681] mt-1 px-1">
+                <span>Oldest</span>
+                <span>Most recent</span>
+              </div>
+            </div>
+          )}
+
+          {/* By topic */}
+          <div>
+            <h3 className="text-xs font-bold text-[#6e7681] mb-3">Topic Breakdown</h3>
+            <div className="space-y-3">
+              {Object.entries(byTopic).map(([topic, topicAttempts]) => {
+                const topicAvg = Math.round(topicAttempts.reduce((s, a) => s + a.percentage, 0) / topicAttempts.length);
+                return (
+                  <div key={topic}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-[#e6edf3] truncate pr-2">{topic}</span>
+                      <span className="text-[#6e7681] flex-shrink-0">{topicAvg}% · {topicAttempts.length}×</span>
+                    </div>
+                    <ProgressBar value={topicAvg} color={color} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Progress Widget (embeds in dashboard) ─────────────────────────────────────
+function ProgressWidget() {
+  const [attempts, setAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const hdrs = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    fetch(`${API_BASE}/quizzes/attempts/mine`, { headers: hdrs })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setAttempts(Array.isArray(data) ? data : []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5 animate-pulse">
+      <div className="h-4 bg-[#21262d] rounded w-32 mb-4" />
+      <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-6 bg-[#21262d] rounded" />)}</div>
+    </div>
+  );
+
+  if (attempts.length === 0) return (
+    <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5">
+      {/* 📊 → FiBarChart2 */}
+      <h2 className="text-base font-bold mb-3 text-[#e6edf3] flex items-center gap-2">
+        <FiBarChart2 size={16} className="text-[#2ea043]" /> My Progress
+      </h2>
+      <p className="text-sm text-[#6e7681]">Take some quizzes to see your progress here!</p>
+      <Link to="/quizzes" className="inline-flex items-center gap-1 mt-3 text-sm text-[#2ea043] hover:underline">
+        Go to Quizzes <FiArrowRight size={13} />
+      </Link>
+    </div>
+  );
+
+  const bySubject = {};
+  attempts.forEach(a => { if (!bySubject[a.subject]) bySubject[a.subject] = []; bySubject[a.subject].push(a); });
+  const subjects = Object.keys(bySubject);
+  const overallAvg = Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length);
+
+  let trending = null;
+  subjects.forEach(sub => {
+    const sa = bySubject[sub];
+    if (sa.length >= 2) {
+      const diff = sa[0].percentage - sa[1].percentage;
+      if (!trending || diff > trending.diff) trending = { subject: sub, diff };
+    }
+  });
+
+  return (
+    <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5">
+      <div className="flex items-center justify-between mb-4">
+        {/* 📊 → FiBarChart2 */}
+        <h2 className="text-base font-bold text-[#e6edf3] flex items-center gap-2">
+          <FiBarChart2 size={16} className="text-[#2ea043]" /> My Progress
+        </h2>
+        <Link to="/quizzes?tab=progress" className="text-xs text-[#2ea043] hover:underline flex items-center gap-1">
+          View all <FiArrowRight size={11} />
+        </Link>
+      </div>
+
+      {/* Overall */}
+      <div className="bg-[#0d1117] rounded-lg p-3 mb-4 flex items-center justify-between">
+        <div>
+          <div className="text-xs text-[#6e7681]">Overall Average</div>
+          <div className="text-2xl font-bold text-[#2ea043]">{overallAvg}%</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-[#6e7681]">{attempts.length} quizzes</div>
+          {trending && (
+            <div className="text-xs text-[#2ea043] mt-0.5 flex items-center justify-end gap-1">
+              {/* ↑ → FiTrendingUp */}
+              <FiTrendingUp size={11} /> {trending.subject}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <ProgressBar value={overallAvg} height="h-2.5" />
+      </div>
+
+      {/* Subject breakdown — top 5 */}
+      <div className="space-y-2.5 mt-4">
+        {subjects.slice(0, 5).map(sub => {
+          const subAttempts = bySubject[sub];
+          const avg = Math.round(subAttempts.reduce((s, a) => s + a.percentage, 0) / subAttempts.length);
+          const color = SUBJECT_COLORS[sub] || "#2ea043";
+          return (
+            <button key={sub} onClick={() => setSelected(sub)} className="w-full text-left group">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="font-semibold group-hover:underline" style={{ color }}>{sub}</span>
+                <span className="text-[#8b949e]">{avg}%</span>
+              </div>
+              <ProgressBar value={avg} color={color} />
+            </button>
+          );
+        })}
+        {subjects.length > 5 && (
+          <Link to="/quizzes?tab=progress" className="block text-xs text-center text-[#6e7681] hover:text-[#2ea043] pt-1">
+            +{subjects.length - 5} more subjects →
+          </Link>
+        )}
+      </div>
+
+      {selected && (
+        <SubjectModal subject={selected} attempts={bySubject[selected]} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Activity dot color map ────────────────────────────────────────────────────
+const ACTIVITY_ICONS = {
+  DOWNLOAD:         { Icon: FiDownload,     dot: "text-[#2ea043]" },
+  RESOURCE_VIEWED:  { Icon: FiEye,          dot: "text-[#388bfd]" },
+  QUIZ_COMPLETED:   { Icon: FiCheckCircle,  dot: "text-[#f0883e]" },
+};
+
+// ── Main Student Dashboard ────────────────────────────────────────────────────
+>>>>>>> Stashed changes
 const StudentDashboard = () => {
   // Example: Backend-ready state structure
   const [userData, setUserData] = useState(null);
@@ -9,7 +255,15 @@ const StudentDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+<<<<<<< Updated upstream
   const { getQuizStats } = useQuizHistory();
+=======
+  const token = localStorage.getItem("accessToken");
+  const hdrs  = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
   // Example: Backend integration would look like this
   useEffect(() => {
@@ -52,6 +306,7 @@ const StudentDashboard = () => {
     fetchDashboardData();
   }, []);
 
+<<<<<<< Updated upstream
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6 flex items-center justify-center">
@@ -63,6 +318,49 @@ const StudentDashboard = () => {
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
         <main className="max-w-6xl mx-auto p-4">
         {/* WELCOME */}
+=======
+  const displayName   = userData?.firstName ?? "Student";
+  const displaySchool = userData?.school?.name ?? "";
+
+  const statCards = [
+    { number: stats?.downloads    ?? "—", label: "Downloads",         Icon: FiDownload     },
+    { number: stats?.quizzesCount ?? "—", label: "Quizzes Completed", Icon: FiCheckCircle  },
+    { number: stats?.pastPapers   ?? "—", label: "Resources Viewed",  Icon: FiEye          },
+  ];
+
+  const quickLinks = [
+    { title: "Books Library",    desc: "Browse textbooks and novels", Icon: FiBookOpen,  link: "/books"        },
+    { title: "Past Papers",      desc: "Access exam papers",          Icon: FiFileText,  link: "/past-papers"  },
+    { title: "Practice Quizzes", desc: "Test your knowledge",         Icon: FiEdit3,     link: "/quizzes"      },
+    { title: "Study Materials",  desc: "Notes and worksheets",        Icon: FiBookmark,  link: "/materials"    },
+  ];
+
+  const formatActivity = item => {
+    const time = new Date(item.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    switch (item.action) {
+      case "DOWNLOAD":        return { text: `Downloaded "${item.resourceTitle ?? "a resource"}"`,  time };
+      case "RESOURCE_VIEWED": return { text: `Viewed "${item.resourceTitle ?? "a resource"}"`,       time };
+      case "QUIZ_COMPLETED":  return { text: `Completed ${item.metadata?.subject ?? ""} quiz — ${item.metadata?.topic ?? ""} (${item.metadata?.percentage ?? 0}%)`, time };
+      default:                return { text: "Activity recorded", time };
+    }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6 flex items-center justify-center">
+      <div>Loading dashboard...</div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
+      <main className="max-w-6xl mx-auto p-4">
+
+        {error && (
+          <div className="mb-4 px-4 py-2 rounded-lg text-sm" style={{ backgroundColor: "#3d1f1f", border: "1px solid #f85149", color: "#f85149" }}>{error}</div>
+        )}
+
+        {/* Welcome */}
+>>>>>>> Stashed changes
         <section className="bg-[#2ea043] text-white p-8 rounded-lg mb-6">
           <h1 className="text-2xl font-bold mb-1">
             Welcome back, {userData?.name || 'Student'}!
@@ -72,6 +370,7 @@ const StudentDashboard = () => {
           </p>
         </section>
 
+<<<<<<< Updated upstream
         {/* STATS */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {stats.map((stat, i) => (
@@ -85,6 +384,16 @@ const StudentDashboard = () => {
               <div className="text-sm text-[#6e7681]">
                 {stat.label}
               </div>
+=======
+        {/* Stats */}
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          {statCards.map((stat, i) => (
+            <div key={i} className="bg-[#161b22] border border-[#21262d] p-5 rounded-lg hover:border-[#2ea043] hover:-translate-y-1 transition">
+              {/* Icon above number */}
+              <stat.Icon size={18} className="text-[#2ea043] mb-2" />
+              <div className="text-2xl font-bold text-[#2ea043]">{stat.number}</div>
+              <div className="text-sm text-[#6e7681]">{stat.label}</div>
+>>>>>>> Stashed changes
             </div>
           ))}
         </section>
@@ -95,6 +404,7 @@ const StudentDashboard = () => {
             📖 Quick Access
           </h2>
 
+<<<<<<< Updated upstream
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
@@ -141,15 +451,51 @@ const StudentDashboard = () => {
                 </div>
               </Link>
             ))}
+=======
+          {/* Quick Access — 2/3 width */}
+          <div className="lg:col-span-2">
+            {/* 📖 → FiBookOpen */}
+            <h2 className="text-xl font-bold mb-4 text-[#e6edf3] flex items-center gap-2">
+              <FiBookOpen size={18} className="text-[#2ea043]" /> Quick Access
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {quickLinks.map((item, i) => (
+                <Link key={i} to={item.link}
+                  className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden hover:border-[#2ea043] hover:-translate-y-1 transition cursor-pointer block">
+                  <div className="h-24 flex items-center justify-center bg-[#0d1117]">
+                    {/* Big centered icon replacing emoji */}
+                    <item.Icon size={36} className="text-[#2ea043]" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-[#e6edf3] mb-1">{item.title}</h3>
+                    <p className="text-sm text-[#6e7681]">{item.desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+>>>>>>> Stashed changes
           </div>
         </section>
 
         {/* ACTIVITY */}
         <section>
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
           <h2 className="text-xl font-bold mb-4 text-[#e6edf3]">
             🕐 Recent Activity
           </h2>
 
+=======
+=======
+>>>>>>> Stashed changes
+          {/* 🕐 → FiClock */}
+          <h2 className="text-xl font-bold mb-4 text-[#e6edf3] flex items-center gap-2">
+            <FiClock size={18} className="text-[#2ea043]" /> Recent Activity
+          </h2>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
           <div className="bg-[#161b22] border border-[#21262d] rounded-lg">
             {recentActivity.map((activity, i) => (
               <div
@@ -158,7 +504,27 @@ const StudentDashboard = () => {
               >
                 {activity}
               </div>
+<<<<<<< Updated upstream
             ))}
+=======
+            ) : (
+              activity.slice(0, 10).map((item, i) => {
+                const { text, time } = formatActivity(item);
+                const { Icon, dot } = ACTIVITY_ICONS[item.action] ?? { Icon: FiBarChart2, dot: "text-[#6e7681]" };
+                return (
+                  <div key={item.id ?? i}
+                    className="flex items-start gap-3 p-4 border-b border-[#21262d] last:border-none hover:bg-[#0d1117] transition">
+                    {/* Colored icon replacing dot */}
+                    <Icon size={15} className={`mt-0.5 flex-shrink-0 ${dot}`} />
+                    <div className="flex-1">
+                      <div className="text-sm text-[#8b949e]">{text}</div>
+                      <div className="text-xs text-[#6e7681] mt-0.5">{time}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+>>>>>>> Stashed changes
           </div>
         </section>
       </main>
