@@ -97,10 +97,12 @@ const Header = () => {
                 <Link to="/teacher"    className={linkCls('/teacher')}>Dashboard</Link>
                 <Link to="/resources"  className={linkCls('/resources')}>Resources</Link>
                 <Link to="/my-classes" className={linkCls('/my-classes')}>My Classes</Link>
+                <Link to="/structured-tests" className={linkCls('/structured-tests')}>Structured Tests</Link>
               </>
             ) : (
               <>
                 <Link to="/student"     className={linkCls('/student')}>Home</Link>
+                
 
                 {/* Books dropdown */}
                 <div className="relative books-dropdown">
@@ -131,6 +133,8 @@ const Header = () => {
 
                 <Link to="/past-papers" className={linkCls('/past-papers')}>Past Papers</Link>
                 <Link to="/quizzes"     className={linkCls('/quizzes')}>Quizzes</Link>
+                <Link to="/structured-tests" className={linkCls('/structured-tests')}>Tests</Link>
+
               </>
             )}
           </nav>
@@ -294,6 +298,8 @@ const Header = () => {
                 <Link to="/books/premium" onClick={closeAll} className={mobileLinkCls('/books/premium')}>⭐ Premium Books</Link>
                 <Link to="/past-papers"   onClick={closeAll} className={mobileLinkCls('/past-papers')}>📄 Past Papers</Link>
                 <Link to="/quizzes"       onClick={closeAll} className={mobileLinkCls('/quizzes')}>📝 Quizzes</Link>
+                <Link to="/structured-tests"  onClick={closeAll} className={mobileLinkCls('/structured-tests')}>🗒️ Tests</Link>
+
               </>
             )}
 

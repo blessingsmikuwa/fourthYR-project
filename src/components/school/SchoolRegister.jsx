@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 
 // ─── CONFIG — change LOGIN_PATH to match your actual route ──────────────────
-const LOGIN_PATH  = '/login';          // ← FIX THIS to your real login route
+const LOGIN_PATH  = '/';          // ← FIX THIS to your real login route
 const API_BASE    = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 const PAYCHANGU_API = 'https://api.paychangu.com/payment';
 

@@ -29,7 +29,7 @@ export async function refreshAccessToken() {
 }
 
 // Clear all auth data and redirect to login
-export function logout(navigate, loginPath = '/login') {
+export function logout(navigate, loginPath = '/') {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   localStorage.removeItem('user')
@@ -37,7 +37,7 @@ export function logout(navigate, loginPath = '/login') {
 }
 
 // Authenticated fetch — auto-refreshes token on 401, logs out if refresh fails
-export async function authFetch(url, options = {}, navigate, loginPath = '/login') {
+export async function authFetch(url, options = {}, navigate, loginPath = '/') {
   const token = localStorage.getItem('accessToken')
 
   const makeRequest = (t) =>

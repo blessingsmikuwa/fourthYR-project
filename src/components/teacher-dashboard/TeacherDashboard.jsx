@@ -141,6 +141,8 @@ const TeacherDashboard = () => {
             password: formData.password,
             bio: formData.bio || undefined,
             dateOfBirth: formData.dateOfBirth || undefined,
+            role: "STUDENT",
+            schoolId: userData?.school?.id ?? undefined,
           }),
         }
       );
