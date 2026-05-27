@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 /**
- * SchoolRegister.jsx
+ * SchoolRegister.jsx  — fixed version
  *
- * 3-step flow:
- *   Step 1 — School details  (name, location, phone)  → POST /api/school/register
- *   Step 2 — Email + pay     → POST /api/school/:id/pay  gets { secretKey, payload }
- *                               then browser POSTs directly to api.paychangu.com
- *   Step 3 — Result page     (PayChangu redirects back with ?step=result&status=...)
+ * Key fixes vs original:
+ *  1. All navigation uses window.location.href instead of navigate() so it
+ *     works correctly after PayChangu's full-page redirect (React Router's
+ *     internal history is stale at that point).
+ *  2. LOGIN_PATH constant — change this ONE value to match your real route.
+ *  3. School name is URL-encoded into the callback_url via the backend and
+ *     read back from ?school= so it survives the redirect.
+ *  4. Step indicator no longer flashes on the result page.
  *
- * Why the browser calls PayChangu directly:
- *   Render free-tier blocks all outbound TCP from the server, so the NestJS backend
- *   cannot reach api.paychangu.com. The browser has no such restriction.
- *
- * Router entry:
- *   <Route path="/school/register" element={<SchoolRegister />} />
- *
- * Required frontend .env:
- *   VITE_API_URL=https://your-api.onrender.com
+ * Backend change needed in initiateSchoolPayment():
+ *   Pass school name when building callbackUrl, e.g.:
+ *     const callbackUrl =
+ *       `${frontendUrl}/school/register?step=result&status=success&school=${encodeURIComponent(school.name)}`;
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+// ─── CONFIG — change LOGIN_PATH to match your actual route ──────────────────
+const LOGIN_PATH  = '/login';          // ← FIX THIS to your real login route
+const API_BASE    = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 const PAYCHANGU_API = 'https://api.paychangu.com/payment';
 
 // ── tiny reusable field wrapper ──────────────────────────────────────────────
@@ -42,13 +42,14 @@ const inputCls =
 
 export default function SchoolRegister() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
-  // PayChangu / our backend redirects back with these query params
-  const urlStep   = searchParams.get('step');
-  const urlStatus = searchParams.get('status'); // success | failed | pending | error
-  const urlTxRef  = searchParams.get('tx_ref');
+  // Query params set by PayChangu redirect
+  const urlStep       = searchParams.get('step');
+  const urlStatus     = searchParams.get('status');   // success | failed | pending | error
+  const urlTxRef      = searchParams.get('tx_ref');
+  const urlSchoolName = searchParams.get('school') ?? '';  // passed through callback_url
 
+  // Step: jump straight to result page if PayChangu redirected back
   const [step, setStep]         = useState(urlStep === 'result' ? 3 : 1);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
@@ -125,9 +126,8 @@ export default function SchoolRegister() {
     setError(null);
 
     try {
-      // ── 1. Ask our backend to create the txRef in the DB and return
-      //       the signed payload + secretKey.
-      //       The backend itself does NOT call PayChangu (Render blocks it).
+      // 1. Ask backend to create txRef in DB and return signed payload + secretKey.
+      //    Backend does NOT call PayChangu (Render blocks outbound TCP).
       const backendRes = await fetch(`${API_BASE}/school/${schoolId}/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,7 @@ export default function SchoolRegister() {
         throw new Error('Invalid response from server');
       }
 
-      // ── 2. Browser calls PayChangu directly — no Render restriction here.
+      // 2. Browser calls PayChangu directly — no Render restriction here.
       const pcRes = await fetch(PAYCHANGU_API, {
         method: 'POST',
         headers: {
@@ -159,8 +159,7 @@ export default function SchoolRegister() {
       const data = await pcRes.json();
 
       if (data?.status === 'success' && data?.data?.checkout_url) {
-        // ── 3. Hand off to the PayChangu checkout page.
-        //       PayChangu will redirect back to callback_url / return_url when done.
+        // 3. Hand off to the PayChangu checkout page.
         window.location.href = data.data.checkout_url;
       } else {
         throw new Error(data?.message ?? 'PayChangu did not return a checkout URL');
@@ -173,13 +172,17 @@ export default function SchoolRegister() {
   };
 
   // ── Result page config ───────────────────────────────────────────────────────
+  //    All action.path values use window.location.href (set below) so React
+  //    Router's stale history doesn't cause a blank page after the redirect loop.
+  const schoolLabel = urlSchoolName || details.name || 'Your school';
+
   const resultConfig = {
     success: {
       icon: '🎉',
       title: 'Registration Complete!',
-      message: `${details.name || 'Your school'} has been successfully registered and activated. You can now log in and start using the platform.`,
+      message: `${schoolLabel} has been successfully registered and activated. You can now log in and start using the platform.`,
       color: '#2ea043', bg: '#1a3a2a', border: '#2ea043',
-      action: { label: 'Go to Login', path: '/login' },
+      action: { label: 'Go to Login', path: "/" },
     },
     pending: {
       icon: '⏳',
@@ -317,7 +320,7 @@ export default function SchoolRegister() {
             <p className="text-center text-xs text-[#6e7681] mt-4">
               Already registered?{' '}
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => { window.location.href = LOGIN_PATH; }}
                 className="text-[#2ea043] hover:underline"
               >
                 Log in here
@@ -424,8 +427,9 @@ export default function SchoolRegister() {
               </p>
             )}
 
+            {/* ✅ FIX: window.location.href instead of navigate() */}
             <button
-              onClick={() => navigate(result.action.path)}
+              onClick={() => { window.location.href = result.action.path; }}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition"
               style={{ backgroundColor: result.color }}
             >

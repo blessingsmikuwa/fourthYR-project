@@ -247,7 +247,6 @@ const StudentDashboard = () => {
     { number:stats?.downloads    ?? "—", label:"Downloads" },
     { number:stats?.quizzesCount ?? "—", label:"Quizzes Completed" },
     { number:stats?.pastPapers   ?? "—", label:"Resources Viewed" },
-    { number:stats ? `${stats.averageScore}%` : "—", label:"Average Quiz Score" },
   ];
 
   const formatActivity = item => {
@@ -281,7 +280,7 @@ const StudentDashboard = () => {
         </section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           {statCards.map((stat, i) => (
             <div key={i} className="bg-[#161b22] border border-[#21262d] p-5 rounded-lg hover:border-[#2ea043] hover:-translate-y-1 transition">
               <div className="text-2xl font-bold text-[#2ea043]">{stat.number}</div>
