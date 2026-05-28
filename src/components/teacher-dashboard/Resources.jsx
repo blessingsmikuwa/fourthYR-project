@@ -23,23 +23,24 @@ const getSubjectStyle = (subject) =>
   SUBJECT_COLORS[subject] || SUBJECT_COLORS["Other"];
 
 export default function TeacherResources() {
-  const [books, setBooks]               = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [showModal, setShowModal]       = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [filterForm, setFilterForm]     = useState("All Forms");
+  const [books, setBooks]                 = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [showModal, setShowModal]         = useState(false);
+  const [deleteTarget, setDeleteTarget]   = useState(null);
+  const [filterForm, setFilterForm]       = useState("All Forms");
   const [filterSubject, setFilterSubject] = useState("All Subjects");
-  const [search, setSearch]             = useState("");
-  const [dragOver, setDragOver]         = useState(false);
-  const [form, setForm]                 = useState({
+  const [search, setSearch]               = useState("");
+  const [dragOver, setDragOver]           = useState(false);
+  const [uploading, setUploading]         = useState(false);
+  const [toast, setToast]                 = useState(null);
+  const [categories, setCategories]       = useState([]);
+  const [classes, setClasses]             = useState([]);
+  const [teacherSchoolId, setTeacherSchoolId] = useState(null);
+  const [form, setForm] = useState({
     title: "", description: "", categoryId: "", classId: "",
     selectedTypeLabel: "PDF Document", type: "PDF", resourceForm: "DOCUMENT",
     targetAudience: "Students", visibility: "PUBLIC", file: null,
   });
-  const [uploading, setUploading] = useState(false);
-  const [toast, setToast]         = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [classes, setClasses]       = useState([]);
   const fileInputRef = useRef();
 
   const showToast = (msg, type = "success") => {
@@ -62,9 +63,19 @@ export default function TeacherResources() {
 
   useEffect(() => {
     fetchBooks();
+
+    // Fetch teacher profile to get schoolId
+    api.get("/auth/me")
+      .then(({ data }) => {
+        const id = data?.schoolId ?? data?.school?.id ?? data?.data?.schoolId ?? null;
+        setTeacherSchoolId(id);
+      })
+      .catch(() => {});
+
     api.get("/categories")
       .then((r) => setCategories(Array.isArray(r.data) ? r.data : []))
       .catch(() => {});
+
     api.get("/classes")
       .then((r) => {
         if (Array.isArray(r.data)) {
@@ -77,7 +88,7 @@ export default function TeacherResources() {
       .catch(() => {});
   }, []);
 
-  // ── Dynamic filter options built from actual fetched data ──────────────────
+  // Dynamic filter options from fetched data
   const subjects = ["All Subjects", ...new Set(books.map((b) => b.category?.name).filter(Boolean))];
   const forms    = ["All Forms",    ...new Set(books.map((b) => b.targetClass?.name).filter(Boolean))].sort();
 
@@ -100,23 +111,39 @@ export default function TeacherResources() {
   };
 
   const handleSubmit = async () => {
-    if (!form.title || !form.file) {
-      showToast("Please fill all required fields and select a file.", "error");
-      return;
+    if (!form.title.trim()) {
+      showToast("Please enter a title.", "error"); return;
     }
+    if (!form.categoryId) {
+      showToast("Please select a subject.", "error"); return;
+    }
+    if (!form.classId) {
+      showToast("Please select a form level.", "error"); return;
+    }
+    if (!form.file) {
+      showToast("Please select a file.", "error"); return;
+    }
+
     setUploading(true);
     try {
       const body = new FormData();
       body.append("file",           form.file);
-      body.append("title",          form.title);
+      body.append("title",          form.title.trim());
       body.append("description",    form.description);
       body.append("type",           form.type);
       body.append("form",           form.resourceForm);
       body.append("status",         "PUBLISHED");
       body.append("targetAudience", form.targetAudience);
       body.append("visibility",     form.visibility);
-      if (form.categoryId) body.append("categoryId", form.categoryId);
-      if (form.classId)    body.append("classId",    form.classId);
+      body.append("categoryId",     form.categoryId);
+      body.append("classId",        form.classId);
+      body.append("isPremium",      "false");
+      body.append("price",          "0");
+
+      // Only attach schoolId when visibility is PRIVATE
+      if (form.visibility === "PRIVATE" && teacherSchoolId) {
+        body.append("schoolId", String(teacherSchoolId));
+      }
 
       await api.post("/resources/create-with-file", body, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -152,7 +179,6 @@ export default function TeacherResources() {
       showToast("Delete request sent to admin.");
       setDeleteTarget(null);
     } catch (err) {
-      console.error(err);
       showToast(err.response?.data?.message ?? err.message, "error");
     }
   };
@@ -174,8 +200,8 @@ export default function TeacherResources() {
           <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-lg text-sm font-semibold shadow-lg"
             style={{
               backgroundColor: toast.type === "error" ? "#3d1a1a" : "#1a3a2a",
-              color: toast.type === "error" ? "#f85149" : "#2ea043",
-              border: `1px solid ${toast.type === "error" ? "#f85149" : "#2ea043"}`,
+              color:           toast.type === "error" ? "#f85149" : "#2ea043",
+              border:          `1px solid ${toast.type === "error" ? "#f85149" : "#2ea043"}`,
             }}>
             {toast.type === "error" ? "⚠️" : "✅"} {toast.msg}
           </div>
@@ -196,10 +222,10 @@ export default function TeacherResources() {
         {/* Stats */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { number: books.length, label: "Total Resources" },
-            { number: [...new Set(books.map((b) => b.category?.name).filter(Boolean))].length, label: "Subjects Covered" },
-            { number: books.reduce((s, b) => s + (b.downloadCount ?? 0), 0), label: "Total Downloads" },
-            { number: [...new Set(books.map((b) => b.targetClass?.name).filter(Boolean))].length, label: "Form Levels" },
+            { number: books.length,                                                                          label: "Total Resources"  },
+            { number: [...new Set(books.map((b) => b.category?.name).filter(Boolean))].length,              label: "Subjects Covered" },
+            { number: books.reduce((s, b) => s + (b.downloadCount ?? 0), 0),                               label: "Total Downloads"  },
+            { number: [...new Set(books.map((b) => b.targetClass?.name).filter(Boolean))].length,           label: "Form Levels"      },
           ].map((stat, i) => (
             <div key={i} className="bg-[#161b22] border border-[#21262d] p-5 rounded-lg hover:border-[#2ea043] hover:-translate-y-1 transition">
               <div className="text-2xl font-bold text-[#2ea043]">{stat.number}</div>
@@ -288,7 +314,7 @@ export default function TeacherResources() {
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-[#e6edf3]">📤 Upload New Resource</h2>
-              <button onClick={() => setShowModal(false)} className="text-[#6e7681] hover:text-[#e6edf3] text-xl transition">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-[#6e7681] hover:text-[#e6edf3] text-xl">✕</button>
             </div>
 
             {/* Drop Zone */}
@@ -298,8 +324,7 @@ export default function TeacherResources() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current.click()}
               className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer mb-5 transition"
-              style={{ borderColor: dragOver ? "#2ea043" : "#30363d", backgroundColor: dragOver ? "#1a3a2a" : "#0d1117" }}
-            >
+              style={{ borderColor: dragOver ? "#2ea043" : "#30363d", backgroundColor: dragOver ? "#1a3a2a" : "#0d1117" }}>
               <input ref={fileInputRef} type="file" accept=".pdf,.docx,.mp4,.png,.jpg"
                 className="hidden" onChange={(e) => handleFileChange(e.target.files[0])} />
               {form.file ? (
@@ -311,37 +336,41 @@ export default function TeacherResources() {
               ) : (
                 <div>
                   <div className="text-3xl mb-2">☁️</div>
-                  <p className="text-sm text-[#8b949e]">Drag & drop a file here, or click to browse</p>
+                  <p className="text-sm text-[#8b949e]">Drag & drop or click to browse</p>
                   <p className="text-xs text-[#6e7681] mt-1">PDF, DOCX, MP4, Images</p>
                 </div>
               )}
             </div>
 
-            {/* Form Fields */}
             <div className="space-y-3 mb-5">
+
+              {/* Title */}
               <input type="text" placeholder="Resource Title *" value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] placeholder-[#6e7681]" />
 
+              {/* Description */}
               <textarea placeholder="Description" value={form.description} rows={2}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] placeholder-[#6e7681] resize-none" />
 
+              {/* Subject + Form — both required */}
               <div className="grid grid-cols-2 gap-3">
-                <select value={form.categoryId ?? ""}
+                <select value={form.categoryId}
                   onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
-                  className="bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
-                  <option value="">Select Subject</option>
+                  className={`bg-[#0d1117] border text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] ${!form.categoryId ? "border-[#21262d]" : "border-[#2ea043]"}`}>
+                  <option value="">Subject *</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <select value={form.classId ?? ""}
+                <select value={form.classId}
                   onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}
-                  className="bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
-                  <option value="">Select Form</option>
+                  className={`bg-[#0d1117] border text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] ${!form.classId ? "border-[#21262d]" : "border-[#2ea043]"}`}>
+                  <option value="">Form Level *</option>
                   {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
+              {/* Type + Audience */}
               <div className="grid grid-cols-2 gap-3">
                 <select value={form.selectedTypeLabel}
                   onChange={(e) => handleTypeChange(e.target.value)}
@@ -357,12 +386,21 @@ export default function TeacherResources() {
                 </select>
               </div>
 
+              {/* Visibility */}
               <select value={form.visibility}
                 onChange={(e) => setForm((f) => ({ ...f, visibility: e.target.value }))}
                 className="w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private (School Only)</option>
               </select>
+
+              {/* Info banner when PRIVATE */}
+              {form.visibility === "PRIVATE" && (
+                <div className="text-xs text-[#e3a525] bg-[#3a2a1a] border border-[#e3a525] rounded-md px-3 py-2">
+                  🏫 This resource will be visible only to your school
+                  {teacherSchoolId ? "." : " — school not found on your profile."}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
