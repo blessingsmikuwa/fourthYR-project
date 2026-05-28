@@ -22,8 +22,6 @@ const RESOURCE_TYPE_MAP = [
 const getSubjectStyle = (subject) =>
   SUBJECT_COLORS[subject] || SUBJECT_COLORS["Other"];
 
-const FORMS = ["All Forms", "Form 1", "Form 2", "Form 3", "Form 4"];
-
 export default function TeacherResources() {
   const [books, setBooks]               = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -65,17 +63,23 @@ export default function TeacherResources() {
   useEffect(() => {
     fetchBooks();
     api.get("/categories")
-      .then(({ data }) => setCategories(Array.isArray(data) ? data : []))
+      .then((r) => setCategories(Array.isArray(r.data) ? r.data : []))
       .catch(() => {});
     api.get("/classes")
-      .then(({ data }) => {
-        if (Array.isArray(data)) {
-          const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      .then((r) => {
+        if (Array.isArray(r.data)) {
+          const sorted = [...r.data].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { numeric: true })
+          );
           setClasses(sorted);
         }
       })
       .catch(() => {});
   }, []);
+
+  // ── Dynamic filter options built from actual fetched data ──────────────────
+  const subjects = ["All Subjects", ...new Set(books.map((b) => b.category?.name).filter(Boolean))];
+  const forms    = ["All Forms",    ...new Set(books.map((b) => b.targetClass?.name).filter(Boolean))].sort();
 
   const handleTypeChange = (label) => {
     const matched = RESOURCE_TYPE_MAP.find((t) => t.label === label);
@@ -135,19 +139,16 @@ export default function TeacherResources() {
 
   const handleRequestDelete = async () => {
     try {
-      // description must be JSON so the backend can parse resourceId + filePath
-      // to delete from both the database and Supabase storage on approval
       await api.post("/request", {
         requestName: `Delete Resource: ${deleteTarget.title}`,
         fromUser:    "Teacher",
         type:        "DELETE_RESOURCE",
         description: JSON.stringify({
           resourceId: deleteTarget.id,
-          filePath:   deleteTarget.fileUrl,  // Supabase file URL / path
+          filePath:   deleteTarget.fileUrl,
           bucket:     "online-library",
         }),
       });
-
       showToast("Delete request sent to admin.");
       setDeleteTarget(null);
     } catch (err) {
@@ -155,8 +156,6 @@ export default function TeacherResources() {
       showToast(err.response?.data?.message ?? err.message, "error");
     }
   };
-
-  const subjects = ["All Subjects", ...new Set(books.map((b) => b.category?.name).filter(Boolean))];
 
   const filtered = books.filter((b) => {
     const matchForm    = filterForm    === "All Forms"    || b.targetClass?.name === filterForm;
@@ -216,7 +215,7 @@ export default function TeacherResources() {
             className="bg-[#161b22] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043] placeholder-[#6e7681] flex-1 min-w-[200px]" />
           <select value={filterForm} onChange={(e) => setFilterForm(e.target.value)}
             className="bg-[#161b22] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">
-            {FORMS.map((f) => <option key={f}>{f}</option>)}
+            {forms.map((f) => <option key={f}>{f}</option>)}
           </select>
           <select value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)}
             className="bg-[#161b22] border border-[#21262d] text-[#e6edf3] rounded-md px-4 py-2 text-sm focus:outline-none focus:border-[#2ea043]">

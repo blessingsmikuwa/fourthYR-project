@@ -16,7 +16,7 @@ const SUBJECT_ICONS = {
 
 const Books = () => {
   const [books, setBooks]                   = useState([]);
-  const [purchasedIds, setPurchasedIds]     = useState(new Set()); // ← real data
+  const [purchasedIds, setPurchasedIds]     = useState(new Set());
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState(null);
   const [searchTerm, setSearchTerm]         = useState("");
@@ -34,7 +34,6 @@ const Books = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  // ── Helpers ──────────────────────────────────────────────────────
   const parsePrice = (book) => {
     const raw = book.price ?? book.amount ?? book.cost ?? book.payment?.amount;
     if (typeof raw === "number") return raw;
@@ -44,7 +43,7 @@ const Books = () => {
 
   const isPaidBook   = (book) => parsePrice(book) > 0 || book.isPaid === true;
   const hasAccess    = (book) =>
-    purchasedIds.has(book.id) ||        // ← checked against real DB data
+    purchasedIds.has(book.id) ||
     book.purchased === true ||
     book.isPurchased === true ||
     book.hasAccess === true;
@@ -57,14 +56,12 @@ const Books = () => {
     return `${currency} ${price.toFixed(2)}`;
   };
 
-  // ── Data fetching ─────────────────────────────────────────────────
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 1. Fetch resources
         const resRes = await fetch(`${API_BASE}/resources`, { headers });
         if (!resRes.ok) throw new Error(`Failed to fetch resources: ${resRes.status}`);
         const resData = await resRes.json();
@@ -76,17 +73,15 @@ const Books = () => {
         const filtered = all.filter((r) => r.form === "DOCUMENT");
         setBooks(filtered);
 
-        // 2. Fetch the user's purchased resource IDs (only if logged in)
         if (token) {
           try {
             const purchRes = await fetch(`${API_BASE}/payment/my-purchases`, { headers });
             if (purchRes.ok) {
               const purchData = await purchRes.json();
-              // purchData = { purchased: ["uuid1", "uuid2", ...] }
               setPurchasedIds(new Set(purchData.purchased ?? []));
             }
           } catch {
-            // If the call fails we just show no purchases – not a fatal error
+            // non-fatal
           }
         }
       } catch (err) {
@@ -99,7 +94,6 @@ const Books = () => {
     fetchAll();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Activity logging ──────────────────────────────────────────────
   const logActivity = async (action, title, metadata = {}) => {
     try {
       await fetch(`${API_BASE}/activity`, {
@@ -110,7 +104,6 @@ const Books = () => {
     } catch {}
   };
 
-  // ── Actions ───────────────────────────────────────────────────────
   const handleDownload = async (book) => {
     try {
       await fetch(`${API_BASE}/resources/${book.id}/download`, {
@@ -134,7 +127,6 @@ const Books = () => {
     setPurchaseLoading(true);
     setError(null);
     try {
-      // POST /payment/create-checkout-session
       const res = await fetch(`${API_BASE}/payment/create-checkout-session`, {
         method: "POST",
         headers,
@@ -147,7 +139,6 @@ const Books = () => {
       }
 
       const data = await res.json();
-      // PaymentService returns { checkoutUrl: "..." }
       const url = data?.checkoutUrl ?? data?.url;
       if (url) {
         window.location.href = url;
@@ -166,7 +157,6 @@ const Books = () => {
     if (book.fileUrl) window.open(book.fileUrl, "_blank");
   };
 
-  // ── Filter / paginate ─────────────────────────────────────────────
   const subjects = [
     "All Subjects",
     ...new Set(books.map((b) => b.category?.name).filter(Boolean)),
@@ -193,7 +183,6 @@ const Books = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedLevel, selectedSubject]);
 
-  // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
       <div className="max-w-6xl mx-auto p-4">
@@ -326,12 +315,14 @@ const Books = () => {
                           >
                             📖 Read
                           </button>
-                          <button
-                            onClick={() => handleDownload(book)}
-                            className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]"
-                          >
-                            ⬇️ Download
-                          </button>
+                          {isPaidBook(book) && (
+                            <button
+                              onClick={() => handleDownload(book)}
+                              className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]"
+                            >
+                              ⬇️ Download
+                            </button>
+                          )}
                         </>
                       ) : (
                         <button
