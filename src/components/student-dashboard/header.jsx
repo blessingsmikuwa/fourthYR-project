@@ -17,9 +17,16 @@ const Header = () => {
     catch { return {} }
   })();
 
-  const isTeacher = location.pathname.startsWith('/teacher') ||
-    ['/resources', '/my-classes', '/teaching-materials',
-     '/student-progress', '/create-quiz', '/upload-material'].includes(location.pathname);
+  // ── FIXED: role-first, path as fallback ──
+  const isTeacher = (() => {
+    const role = user?.role;
+    if (role === "TEACHER" || role === "ADMIN") return true;
+    return location.pathname.startsWith('/teacher') ||
+      ['/resources', '/my-classes', '/teaching-materials',
+       '/student-progress', '/create-quiz', '/upload-material',
+       '/structured-tests'
+      ].includes(location.pathname);
+  })();
 
   const userType  = isTeacher ? 'Teacher' : 'Student';
   const userEmail = user.email ?? (isTeacher ? 'teacher@edulib.com' : 'student@edulib.com');
@@ -102,7 +109,6 @@ const Header = () => {
             ) : (
               <>
                 <Link to="/student"     className={linkCls('/student')}>Home</Link>
-                
 
                 {/* Books dropdown */}
                 <div className="relative books-dropdown">
@@ -134,7 +140,6 @@ const Header = () => {
                 <Link to="/past-papers" className={linkCls('/past-papers')}>Past Papers</Link>
                 <Link to="/quizzes"     className={linkCls('/quizzes')}>Quizzes</Link>
                 <Link to="/structured-tests" className={linkCls('/structured-tests')}>Tests</Link>
-
               </>
             )}
           </nav>
@@ -275,6 +280,7 @@ const Header = () => {
                 <Link to="/teacher"    onClick={closeAll} className={mobileLinkCls('/teacher')}>🏠 Dashboard</Link>
                 <Link to="/resources"  onClick={closeAll} className={mobileLinkCls('/resources')}>📚 Resources</Link>
                 <Link to="/my-classes" onClick={closeAll} className={mobileLinkCls('/my-classes')}>🏫 My Classes</Link>
+                <Link to="/structured-tests" onClick={closeAll} className={mobileLinkCls('/structured-tests')}>📝 Structured Tests</Link>
 
                 {/* Quick Access */}
                 <div className="pt-2 mt-1 border-t border-app">
@@ -298,8 +304,7 @@ const Header = () => {
                 <Link to="/books/premium" onClick={closeAll} className={mobileLinkCls('/books/premium')}>⭐ Premium Books</Link>
                 <Link to="/past-papers"   onClick={closeAll} className={mobileLinkCls('/past-papers')}>📄 Past Papers</Link>
                 <Link to="/quizzes"       onClick={closeAll} className={mobileLinkCls('/quizzes')}>📝 Quizzes</Link>
-                <Link to="/structured-tests"  onClick={closeAll} className={mobileLinkCls('/structured-tests')}>🗒️ Tests</Link>
-
+                <Link to="/structured-tests" onClick={closeAll} className={mobileLinkCls('/structured-tests')}>🗒️ Tests</Link>
               </>
             )}
 
