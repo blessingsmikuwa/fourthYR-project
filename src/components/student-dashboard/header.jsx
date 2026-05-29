@@ -17,16 +17,8 @@ const Header = () => {
     catch { return {} }
   })();
 
-  // ── FIXED: role-first, path as fallback ──
-  const isTeacher = (() => {
-    const role = user?.role;
-    if (role === "TEACHER" || role === "ADMIN") return true;
-    return location.pathname.startsWith('/teacher') ||
-      ['/resources', '/my-classes', '/teaching-materials',
-       '/student-progress', '/create-quiz', '/upload-material',
-       '/structured-tests'
-      ].includes(location.pathname);
-  })();
+  // ── FIXED: role only, no path guessing ──
+  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
 
   const userType  = isTeacher ? 'Teacher' : 'Student';
   const userEmail = user.email ?? (isTeacher ? 'teacher@edulib.com' : 'student@edulib.com');
@@ -101,14 +93,14 @@ const Header = () => {
           <nav className="hidden lg:flex items-center gap-7">
             {isTeacher ? (
               <>
-                <Link to="/teacher"    className={linkCls('/teacher')}>Dashboard</Link>
-                <Link to="/resources"  className={linkCls('/resources')}>Resources</Link>
-                <Link to="/my-classes" className={linkCls('/my-classes')}>My Classes</Link>
+                <Link to="/teacher"          className={linkCls('/teacher')}>Dashboard</Link>
+                <Link to="/resources"        className={linkCls('/resources')}>Resources</Link>
+                <Link to="/my-classes"       className={linkCls('/my-classes')}>My Classes</Link>
                 <Link to="/structured-tests" className={linkCls('/structured-tests')}>Structured Tests</Link>
               </>
             ) : (
               <>
-                <Link to="/student"     className={linkCls('/student')}>Home</Link>
+                <Link to="/student" className={linkCls('/student')}>Home</Link>
 
                 {/* Books dropdown */}
                 <div className="relative books-dropdown">
@@ -137,8 +129,8 @@ const Header = () => {
                   )}
                 </div>
 
-                <Link to="/past-papers" className={linkCls('/past-papers')}>Past Papers</Link>
-                <Link to="/quizzes"     className={linkCls('/quizzes')}>Quizzes</Link>
+                <Link to="/past-papers"      className={linkCls('/past-papers')}>Past Papers</Link>
+                <Link to="/quizzes"          className={linkCls('/quizzes')}>Quizzes</Link>
                 <Link to="/structured-tests" className={linkCls('/structured-tests')}>Tests</Link>
               </>
             )}
@@ -146,6 +138,7 @@ const Header = () => {
 
           {/* ── Desktop Right ── */}
           <div className="hidden lg:flex items-center gap-3">
+
             {/* Theme */}
             <button
               onClick={toggleTheme}
@@ -155,7 +148,7 @@ const Header = () => {
               {isDark ? '☀️' : '🌙'}
             </button>
 
-            {/* Quick Access */}
+            {/* Quick Access — teacher only */}
             {isTeacher && (
               <div className="relative quick-access-dropdown">
                 <button
@@ -277,9 +270,9 @@ const Header = () => {
             {/* Nav links */}
             {isTeacher ? (
               <>
-                <Link to="/teacher"    onClick={closeAll} className={mobileLinkCls('/teacher')}>🏠 Dashboard</Link>
-                <Link to="/resources"  onClick={closeAll} className={mobileLinkCls('/resources')}>📚 Resources</Link>
-                <Link to="/my-classes" onClick={closeAll} className={mobileLinkCls('/my-classes')}>🏫 My Classes</Link>
+                <Link to="/teacher"          onClick={closeAll} className={mobileLinkCls('/teacher')}>🏠 Dashboard</Link>
+                <Link to="/resources"        onClick={closeAll} className={mobileLinkCls('/resources')}>📚 Resources</Link>
+                <Link to="/my-classes"       onClick={closeAll} className={mobileLinkCls('/my-classes')}>🏫 My Classes</Link>
                 <Link to="/structured-tests" onClick={closeAll} className={mobileLinkCls('/structured-tests')}>📝 Structured Tests</Link>
 
                 {/* Quick Access */}
@@ -299,11 +292,11 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Link to="/student"       onClick={closeAll} className={mobileLinkCls('/student')}>🏠 Home</Link>
-                <Link to="/books"         onClick={closeAll} className={mobileLinkCls('/books')}>📖 Free Books</Link>
-                <Link to="/books/premium" onClick={closeAll} className={mobileLinkCls('/books/premium')}>⭐ Premium Books</Link>
-                <Link to="/past-papers"   onClick={closeAll} className={mobileLinkCls('/past-papers')}>📄 Past Papers</Link>
-                <Link to="/quizzes"       onClick={closeAll} className={mobileLinkCls('/quizzes')}>📝 Quizzes</Link>
+                <Link to="/student"          onClick={closeAll} className={mobileLinkCls('/student')}>🏠 Home</Link>
+                <Link to="/books"            onClick={closeAll} className={mobileLinkCls('/books')}>📖 Free Books</Link>
+                <Link to="/books/premium"    onClick={closeAll} className={mobileLinkCls('/books/premium')}>⭐ Premium Books</Link>
+                <Link to="/past-papers"      onClick={closeAll} className={mobileLinkCls('/past-papers')}>📄 Past Papers</Link>
+                <Link to="/quizzes"          onClick={closeAll} className={mobileLinkCls('/quizzes')}>📝 Quizzes</Link>
                 <Link to="/structured-tests" onClick={closeAll} className={mobileLinkCls('/structured-tests')}>🗒️ Tests</Link>
               </>
             )}
