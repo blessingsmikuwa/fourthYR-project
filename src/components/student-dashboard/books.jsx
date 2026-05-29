@@ -1,31 +1,58 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import {
+  FiSearch,
+  FiBookOpen,
+  FiDownload,
+  FiShoppingCart,
+  FiCheck,
+  FiChevronLeft,
+  FiChevronRight,
+  FiLoader,
+} from "react-icons/fi";
+import {
+  GiMicroscope,
+  GiChemicalDrop,
+  GiAtom,
+} from "react-icons/gi";
+import {
+  MdCalculate,
+  MdMenuBook,
+  MdHistoryEdu,
+  MdPublic,
+} from "react-icons/md";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-const SUBJECT_ICONS = {
-  Mathematics: "🧮",
-  Biology: "🧬",
-  Chemistry: "⚗️",
-  Physics: "⚛️",
-  English: "📝",
-  History: "📜",
-  Geography: "🌍",
-  Other: "📚",
+// Subject icon map — React Icon components
+const SUBJECT_ICON_MAP = {
+  Mathematics:  { Icon: MdCalculate,    color: "#1f6feb" },
+  Biology:      { Icon: GiMicroscope,   color: "#2ea043" },
+  Chemistry:    { Icon: GiChemicalDrop, color: "#a371f7" },
+  Physics:      { Icon: GiAtom,         color: "#f0883e" },
+  English:      { Icon: MdMenuBook,     color: "#e3b341" },
+  History:      { Icon: MdHistoryEdu,   color: "#da3633" },
+  Geography:    { Icon: MdPublic,       color: "#58a6ff" },
+  Other:        { Icon: FiBookOpen,     color: "#6e7681" },
 };
 
+function SubjectIcon({ name, size = 32 }) {
+  const entry = SUBJECT_ICON_MAP[name] ?? SUBJECT_ICON_MAP["Other"];
+  return <entry.Icon size={size} style={{ color: entry.color }} />;
+}
+
 const Books = () => {
-  const [books, setBooks]                   = useState([]);
-  const [purchasedIds, setPurchasedIds]     = useState(new Set());
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState(null);
-  const [searchTerm, setSearchTerm]         = useState("");
-  const [selectedLevel, setSelectedLevel]   = useState("All Levels");
+  const [books, setBooks]                     = useState([]);
+  const [purchasedIds, setPurchasedIds]       = useState(new Set());
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState(null);
+  const [searchTerm, setSearchTerm]           = useState("");
+  const [selectedLevel, setSelectedLevel]     = useState("All Levels");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
-  const [currentPage, setCurrentPage]       = useState(1);
+  const [currentPage, setCurrentPage]         = useState(1);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const itemsPerPage = 12;
-  const location = useLocation();
+  const location   = useLocation();
   const showPremium = location.pathname === "/books/premium";
 
   const token = localStorage.getItem("accessToken");
@@ -41,8 +68,8 @@ const Books = () => {
     return 0;
   };
 
-  const isPaidBook   = (book) => parsePrice(book) > 0 || book.isPaid === true;
-  const hasAccess    = (book) =>
+  const isPaidBook  = (book) => parsePrice(book) > 0 || book.isPaid === true;
+  const hasAccess   = (book) =>
     purchasedIds.has(book.id) ||
     book.purchased === true ||
     book.isPurchased === true ||
@@ -70,8 +97,7 @@ const Books = () => {
           : Array.isArray(resData)
           ? resData
           : [];
-        const filtered = all.filter((r) => r.form === "DOCUMENT");
-        setBooks(filtered);
+        setBooks(all.filter((r) => r.form === "DOCUMENT"));
 
         if (token) {
           try {
@@ -80,9 +106,7 @@ const Books = () => {
               const purchData = await purchRes.json();
               setPurchasedIds(new Set(purchData.purchased ?? []));
             }
-          } catch {
-            // non-fatal
-          }
+          } catch {}
         }
       } catch (err) {
         setError(err.message);
@@ -90,7 +114,6 @@ const Books = () => {
         setLoading(false);
       }
     };
-
     fetchAll();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -106,10 +129,7 @@ const Books = () => {
 
   const handleDownload = async (book) => {
     try {
-      await fetch(`${API_BASE}/resources/${book.id}/download`, {
-        method: "POST",
-        headers,
-      });
+      await fetch(`${API_BASE}/resources/${book.id}/download`, { method: "POST", headers });
     } catch {}
     await logActivity("DOWNLOAD", book.title);
     if (book.fileUrl) window.open(book.fileUrl, "_blank");
@@ -118,11 +138,7 @@ const Books = () => {
   const handlePurchase = async (book) => {
     const price = parsePrice(book);
     if (!price) return;
-
-    if (!token) {
-      setError("Please log in to purchase books.");
-      return;
-    }
+    if (!token) { setError("Please log in to purchase books."); return; }
 
     setPurchaseLoading(true);
     setError(null);
@@ -132,19 +148,14 @@ const Books = () => {
         headers,
         body: JSON.stringify({ resourceId: book.id, amount: price }),
       });
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message ?? "Unable to start payment");
       }
-
       const data = await res.json();
-      const url = data?.checkoutUrl ?? data?.url;
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error("No checkout URL returned from server");
-      }
+      const url  = data?.checkoutUrl ?? data?.url;
+      if (url) window.location.href = url;
+      else throw new Error("No checkout URL returned from server");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -166,11 +177,9 @@ const Books = () => {
     const matchesSearch =
       book.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel =
-      selectedLevel === "All Levels" || book.targetClass?.name === selectedLevel;
-    const matchesSubject =
-      selectedSubject === "All Subjects" || book.category?.name === selectedSubject;
-    const matchesType = showPremium ? isPaidBook(book) : !isPaidBook(book);
+    const matchesLevel   = selectedLevel   === "All Levels"   || book.targetClass?.name === selectedLevel;
+    const matchesSubject = selectedSubject === "All Subjects" || book.category?.name    === selectedSubject;
+    const matchesType    = showPremium ? isPaidBook(book) : !isPaidBook(book);
     return matchesSearch && matchesLevel && matchesSubject && matchesType;
   });
 
@@ -179,9 +188,7 @@ const Books = () => {
   const startIndex   = (currentPage - 1) * itemsPerPage;
   const currentBooks = filteredBooks.slice(startIndex, startIndex + itemsPerPage);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedLevel, selectedSubject]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, selectedLevel, selectedSubject]);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
@@ -197,8 +204,9 @@ const Books = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] rounded-lg px-4 py-2 focus:border-[#2ea043] outline-none"
             />
-            <button className="bg-[#2ea043] text-white px-6 py-2 rounded-lg hover:bg-[#238636]">
-              🔍 Search
+            {/* 🔍 → FiSearch */}
+            <button className="bg-[#2ea043] text-white px-6 py-2 rounded-lg hover:bg-[#238636] flex items-center gap-2">
+              <FiSearch size={16} /> Search
             </button>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
@@ -218,9 +226,7 @@ const Books = () => {
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="border-2 border-[#21262d] bg-[#0d1117] text-[#e6edf3] p-2 rounded-md"
             >
-              {subjects.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
+              {subjects.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
         </div>
@@ -237,7 +243,11 @@ const Books = () => {
         </div>
 
         {loading && (
-          <div className="text-center py-8 text-[#e6edf3]">Loading books...</div>
+          <div className="text-center py-8 text-[#e6edf3] flex items-center justify-center gap-2">
+            {/* Spinner via animate-spin on FiLoader */}
+            <FiLoader size={18} className="animate-spin text-[#2ea043]" />
+            Loading books…
+          </div>
         )}
         {error && (
           <div className="bg-red-900 border border-red-700 text-red-100 p-4 rounded-lg mt-4">
@@ -248,9 +258,7 @@ const Books = () => {
         {!loading && !error && (
           <div className="space-y-4 mt-4">
             {currentBooks.length === 0 ? (
-              <div className="text-center py-12 text-[#6e7681]">
-                No books found.
-              </div>
+              <div className="text-center py-12 text-[#6e7681]">No books found.</div>
             ) : (
               currentBooks.map((book, index) => (
                 <div
@@ -258,48 +266,31 @@ const Books = () => {
                   className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 hover:border-[#2ea043] transition"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Cover */}
+                    {/* Cover — subject icon replaces emoji */}
                     <div className="w-20 h-24 bg-[#21262d] border border-[#30363d] flex items-center justify-center rounded relative flex-shrink-0">
-                      <span className="text-3xl">
-                        {SUBJECT_ICONS[book.category?.name] || SUBJECT_ICONS["Other"]}
-                      </span>
+                      <SubjectIcon name={book.category?.name} size={36} />
                     </div>
 
                     {/* Info */}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-[#e6edf3] text-lg">
-                        {book.title}
-                      </h3>
+                      <h3 className="font-semibold text-[#e6edf3] text-lg">{book.title}</h3>
                       {book.description && (
-                        <p className="text-sm text-[#6e7681] mb-1 line-clamp-1">
-                          {book.description}
-                        </p>
+                        <p className="text-sm text-[#6e7681] mb-1 line-clamp-1">{book.description}</p>
                       )}
                       <div className="flex items-center gap-4 text-sm mb-2 flex-wrap">
                         {book.category?.name && (
-                          <span className="text-[#2ea043] font-semibold">
-                            {book.category.name}
-                          </span>
+                          <span className="text-[#2ea043] font-semibold">{book.category.name}</span>
                         )}
                         {book.targetClass?.name && (
-                          <span className="text-[#6e7681]">
-                            {book.targetClass.name}
-                          </span>
+                          <span className="text-[#6e7681]">{book.targetClass.name}</span>
                         )}
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            isPaidBook(book)
-                              ? "bg-[#2563eb] text-white"
-                              : "bg-[#2ea043] text-white"
-                          }`}
-                        >
-                          {isPaidBook(book)
-                            ? `Paid • ${formatPrice(book)}`
-                            : "Free"}
+                        <span className={`text-xs px-2 py-0.5 rounded ${isPaidBook(book) ? "bg-[#2563eb] text-white" : "bg-[#2ea043] text-white"}`}>
+                          {isPaidBook(book) ? `Paid • ${formatPrice(book)}` : "Free"}
                         </span>
+                        {/* ✓ Purchased → FiCheck */}
                         {hasAccess(book) && isPaidBook(book) && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-[#16a34a] text-white">
-                            ✓ Purchased
+                          <span className="text-xs px-2 py-0.5 rounded bg-[#16a34a] text-white flex items-center gap-1">
+                            <FiCheck size={11} /> Purchased
                           </span>
                         )}
                       </div>
@@ -309,30 +300,31 @@ const Books = () => {
                     <div className="flex gap-2 flex-shrink-0">
                       {canAccessBook(book) ? (
                         <>
+                          {/* 📖 Read → FiBookOpen */}
                           <button
                             onClick={() => handleView(book)}
-                            className="bg-[#2ea043] text-white px-3 py-2 rounded text-sm hover:bg-[#238636]"
+                            className="bg-[#2ea043] text-white px-3 py-2 rounded text-sm hover:bg-[#238636] flex items-center gap-1.5"
                           >
-                            📖 Read
+                            <FiBookOpen size={14} /> Read
                           </button>
-                          {isPaidBook(book) && (
-                            <button
-                              onClick={() => handleDownload(book)}
-                              className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd]"
-                            >
-                              ⬇️ Download
-                            </button>
-                          )}
+                          {/* ⬇️ Download → FiDownload */}
+                          <button
+                            onClick={() => handleDownload(book)}
+                            className="bg-[#1f6feb] text-white px-3 py-2 rounded text-sm hover:bg-[#388bfd] flex items-center gap-1.5"
+                          >
+                            <FiDownload size={14} /> Download
+                          </button>
                         </>
                       ) : (
+                        /* Buy → FiShoppingCart */
                         <button
                           onClick={() => handlePurchase(book)}
                           disabled={purchaseLoading}
-                          className="bg-[#2563eb] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60 whitespace-nowrap"
+                          className="bg-[#2563eb] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60 whitespace-nowrap flex items-center gap-1.5"
                         >
                           {purchaseLoading
-                            ? "Processing…"
-                            : `Buy • ${formatPrice(book)}`}
+                            ? <><FiLoader size={13} className="animate-spin" /> Processing…</>
+                            : <><FiShoppingCart size={13} /> Buy • {formatPrice(book)}</>}
                         </button>
                       )}
                     </div>
@@ -343,19 +335,17 @@ const Books = () => {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* Pagination — « » → FiChevronLeft / FiChevronRight */}
         {!loading && !error && totalPages > 1 && (
           <div className="flex justify-center gap-2 mt-8">
             <button
               onClick={() => setCurrentPage((p) => p - 1)}
               disabled={currentPage === 1}
-              className={`border border-[#21262d] px-3 py-1 rounded ${
-                currentPage === 1
-                  ? "text-[#6e7681] cursor-not-allowed"
-                  : "text-[#e6edf3] hover:border-[#2ea043]"
+              className={`border border-[#21262d] px-3 py-1 rounded flex items-center ${
+                currentPage === 1 ? "text-[#6e7681] cursor-not-allowed" : "text-[#e6edf3] hover:border-[#2ea043]"
               }`}
             >
-              «
+              <FiChevronLeft size={16} />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
@@ -373,16 +363,15 @@ const Books = () => {
             <button
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={currentPage === totalPages}
-              className={`border border-[#21262d] px-3 py-1 rounded ${
-                currentPage === totalPages
-                  ? "text-[#6e7681] cursor-not-allowed"
-                  : "text-[#e6edf3] hover:border-[#2ea043]"
+              className={`border border-[#21262d] px-3 py-1 rounded flex items-center ${
+                currentPage === totalPages ? "text-[#6e7681] cursor-not-allowed" : "text-[#e6edf3] hover:border-[#2ea043]"
               }`}
             >
-              »
+              <FiChevronRight size={16} />
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

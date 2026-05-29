@@ -1,4 +1,25 @@
 import { useState, useEffect } from "react";
+import { 
+  FiBook, 
+  FiUsers, 
+  FiCheck, 
+  FiAlertCircle, 
+  FiX,
+  FiPlus,
+  FiFolder,
+  FiGrid
+} from "react-icons/fi";
+import { 
+  MdOutlineLibraryBooks, 
+  MdOutlineSchool,
+  MdOutlineClass,
+  MdAssignment,
+  MdOutlineAssignment
+} from "react-icons/md";
+import { FaChalkboardTeacher, FaUserGraduate } from "react-icons/fa";
+import { HiOutlineDocumentDownload } from "react-icons/hi";
+import { IoWarningOutline } from "react-icons/io5";
+import { BiBookOpen } from "react-icons/bi";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -112,13 +133,13 @@ export default function MyClasses() {
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] p-6">
 
       {toast && (
-        <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-lg text-sm font-semibold shadow-lg"
+        <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-lg text-sm font-semibold shadow-lg flex items-center gap-2"
           style={{
             backgroundColor: toast.type === "error" ? "#3d1a1a" : "#1a3a2a",
             color:           toast.type === "error" ? "#f85149" : "#2ea043",
             border:          `1px solid ${toast.type === "error" ? "#f85149" : "#2ea043"}`,
           }}>
-          {toast.type === "error" ? "⚠️" : "✅"} {toast.msg}
+          {toast.type === "error" ? <IoWarningOutline /> : <FiCheck />} {toast.msg}
         </div>
       )}
 
@@ -126,20 +147,24 @@ export default function MyClasses() {
 
         {/* Header */}
         <section className="bg-[#1a3a2a] border border-[#2ea043] p-8 rounded-lg mb-6">
-          <h1 className="text-2xl font-bold mb-1">🏫 My Classes</h1>
+          <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+            <MdOutlineSchool /> My Classes
+          </h1>
           <p className="opacity-80 text-sm">View your classes and manage assigned resources.</p>
         </section>
 
         {/* Stats */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { number: classes.length,                                    label: "Total Classes" },
-            { number: classes.reduce((s, c) => s + (c.students ?? 0), 0), label: "Total Students" },
-            { number: allResources.length,                               label: "Available Resources" },
-            { number: classes.length,                                    label: "Active Classes" },
+            { number: classes.length, label: "Total Classes", icon: <MdOutlineClass /> },
+            { number: classes.reduce((s, c) => s + (c.students ?? 0), 0), label: "Total Students", icon: <FaUserGraduate /> },
+            { number: allResources.length, label: "Available Resources", icon: <MdOutlineLibraryBooks /> },
+            { number: classes.length, label: "Active Classes", icon: <FiGrid /> },
           ].map((stat, i) => (
             <div key={i} className="bg-[#161b22] border border-[#21262d] p-5 rounded-lg hover:border-[#2ea043] hover:-translate-y-1 transition">
-              <div className="text-2xl font-bold text-[#2ea043]">{stat.number}</div>
+              <div className="text-2xl font-bold text-[#2ea043] flex items-center gap-2">
+                {stat.icon} {stat.number}
+              </div>
               <div className="text-sm text-[#6e7681]">{stat.label}</div>
             </div>
           ))}
@@ -149,9 +174,14 @@ export default function MyClasses() {
 
           {/* Class list */}
           <div>
-            <h2 className="text-base font-bold mb-3">📋 Classes</h2>
+            <h2 className="text-base font-bold mb-3 flex items-center gap-2">
+              <MdOutlineClass /> Classes
+            </h2>
             {classes.length === 0 ? (
-              <div className="text-center py-12 text-[#6e7681] text-sm">No classes found.</div>
+              <div className="text-center py-12 text-[#6e7681] text-sm">
+                <BiBookOpen className="mx-auto mb-2" size={36} />
+                No classes found.
+              </div>
             ) : (
               <div className="space-y-3">
                 {classes.map((cls) => (
@@ -162,10 +192,14 @@ export default function MyClasses() {
                       backgroundColor: selected?.id === cls.id ? "#1a3a2a" : "#161b22",
                     }}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold">{cls.name}</span>
+                      <span className="font-semibold flex items-center gap-2">
+                        <MdOutlineClass size={16} /> {cls.name}
+                      </span>
                     </div>
                     {cls.school?.name && (
-                      <div className="text-xs text-[#6e7681]">🏫 {cls.school.name}</div>
+                      <div className="text-xs text-[#6e7681] flex items-center gap-1">
+                        <MdOutlineSchool size={12} /> {cls.school.name}
+                      </div>
                     )}
                   </button>
                 ))}
@@ -177,7 +211,9 @@ export default function MyClasses() {
           <div>
             {!selected ? (
               <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-12 text-center text-[#6e7681] h-full flex flex-col items-center justify-center">
-                <div className="text-4xl mb-3">👈</div>
+                <div className="text-4xl mb-3">
+                  <FiArrowLeft className="mx-auto" size={36} />
+                </div>
                 <p className="text-sm">Select a class to manage its resources.</p>
               </div>
             ) : (
@@ -186,14 +222,18 @@ export default function MyClasses() {
                 {/* Panel header */}
                 <div className="bg-[#1a3a2a] border-b border-[#21262d] px-5 py-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold">{selected.name}</h3>
+                    <h3 className="font-bold flex items-center gap-2">
+                      <MdOutlineClass /> {selected.name}
+                    </h3>
                     {selected.school?.name && (
-                      <p className="text-xs text-[#6e7681]">{selected.school.name}</p>
+                      <p className="text-xs text-[#6e7681] flex items-center gap-1 mt-1">
+                        <MdOutlineSchool size={12} /> {selected.school.name}
+                      </p>
                     )}
                   </div>
                   <button onClick={() => setShowAssign((v) => !v)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-md bg-[#2ea043] text-white hover:bg-[#3fb950] transition">
-                    + Assign Resource
+                    className="text-xs font-semibold px-3 py-1.5 rounded-md bg-[#2ea043] text-white hover:bg-[#3fb950] transition flex items-center gap-1">
+                    <FiPlus size={12} /> Assign Resource
                   </button>
                 </div>
 
@@ -217,10 +257,12 @@ export default function MyClasses() {
                                 opacity:         assigned ? 0.5 : 1,
                                 cursor:          assigned ? "not-allowed" : "pointer",
                               }}>
-                              <span className="text-sm text-[#e6edf3] truncate">{res.title}</span>
+                              <span className="text-sm text-[#e6edf3] truncate flex items-center gap-2">
+                                <FiBook size={12} /> {res.title}
+                              </span>
                               <span className="text-xs font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0"
                                 style={{ backgroundColor: style.bg, color: style.color }}>
-                                {assigned ? "✓ Added" : res.type}
+                                {assigned ? <><FiCheck size={10} /> Added</> : res.type}
                               </span>
                             </button>
                           );
@@ -232,12 +274,14 @@ export default function MyClasses() {
 
                 {/* Assigned resources */}
                 <div className="p-5">
-                  <p className="text-xs text-[#6e7681] mb-3">
-                    Assigned Resources ({classResources.length})
+                  <p className="text-xs text-[#6e7681] mb-3 flex items-center gap-1">
+                    <MdAssignment size={12} /> Assigned Resources ({classResources.length})
                   </p>
                   {classResources.length === 0 ? (
                     <div className="text-center py-8 text-[#6e7681]">
-                      <div className="text-3xl mb-2">📭</div>
+                      <div className="text-3xl mb-2 flex justify-center">
+                        <MdOutlineLibraryBooks size={36} className="text-[#6e7681]" />
+                      </div>
                       <p className="text-xs">No resources assigned yet.</p>
                     </div>
                   ) : (
@@ -246,16 +290,20 @@ export default function MyClasses() {
                         const style = getTypeStyle(res.type);
                         return (
                           <div key={res.id}
-                            className="flex items-center justify-between bg-[#0d1117] border border-[#21262d] rounded-md px-4 py-3 hover:border-[#2ea043] transition">
-                            <div className="flex items-center gap-3">
+                            className="flex items-center justify-between bg-[#0d1117] border border-[#21262d] rounded-md px-4 py-3 hover:border-[#2ea043] transition group">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
                               <span className="text-xs font-bold px-2 py-0.5 rounded flex-shrink-0"
                                 style={{ backgroundColor: style.bg, color: style.color }}>
                                 {res.type}
                               </span>
-                              <span className="text-sm truncate">{res.title}</span>
+                              <span className="text-sm truncate flex items-center gap-2">
+                                <FiBook size={12} className="flex-shrink-0" /> {res.title}
+                              </span>
                             </div>
                             <button onClick={() => removeResource(res.id)}
-                              className="text-xs text-[#f85149] hover:text-[#da3633] ml-3 flex-shrink-0">✕</button>
+                              className="text-xs text-[#f85149] hover:text-[#da3633] ml-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition">
+                              <FiX size={14} />
+                            </button>
                           </div>
                         );
                       })}
@@ -270,3 +318,6 @@ export default function MyClasses() {
     </div>
   );
 }
+
+// Missing import - add this with the other imports at the top
+import { FiArrowLeft } from "react-icons/fi";

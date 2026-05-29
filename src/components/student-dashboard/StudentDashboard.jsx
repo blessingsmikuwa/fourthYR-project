@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import {
+  FiBookOpen,
+  FiFileText,
+  FiEdit3,
+  FiBookmark,
+  FiBarChart2,
+  FiClock,
+  FiDownload,
+  FiCheckCircle,
+  FiEye,
+  FiTrendingUp,
+  FiArrowRight,
+  FiX,
+} from "react-icons/fi";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -18,20 +32,19 @@ function ProgressBar({ value, color = "#2ea043", height = "h-2" }) {
   return (
     <div className={`w-full bg-[#21262d] rounded-full ${height} overflow-hidden`}>
       <div className={`${height} rounded-full transition-all duration-700 ease-out`}
-        style={{ width:`${width}%`, backgroundColor:getColor(value) }} />
+        style={{ width: `${width}%`, backgroundColor: getColor(value) }} />
     </div>
   );
 }
 
 // ── Subject Detail Modal ──────────────────────────────────────────────────────
 function SubjectModal({ subject, attempts, onClose }) {
-  const color  = SUBJECT_COLORS[subject] || "#2ea043";
-  const sorted = [...attempts].sort((a,b) => new Date(a.completedAt)-new Date(b.completedAt));
+  const color = SUBJECT_COLORS[subject] || "#2ea043";
+  const sorted = [...attempts].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
   const byTopic = {};
-  attempts.forEach(a => { if(!byTopic[a.topic]) byTopic[a.topic]=[]; byTopic[a.topic].push(a); });
-  const avg = Math.round(attempts.reduce((s,a)=>s+a.percentage,0)/attempts.length);
-  const best = Math.max(...attempts.map(a=>a.percentage));
-  const worst = Math.min(...attempts.map(a=>a.percentage));
+  attempts.forEach(a => { if (!byTopic[a.topic]) byTopic[a.topic] = []; byTopic[a.topic].push(a); });
+  const avg = Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length);
+  const best = Math.max(...attempts.map(a => a.percentage));
 
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -40,14 +53,17 @@ function SubjectModal({ subject, attempts, onClose }) {
         {/* Header */}
         <div className="p-5 sticky top-0 bg-[#0d1117] border-b border-[#21262d] flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold" style={{color}}>{subject}</h2>
+            <h2 className="text-lg font-bold" style={{ color }}>{subject}</h2>
             <div className="flex gap-3 text-xs text-[#6e7681] mt-0.5">
               <span>{attempts.length} attempts</span>
               <span>Avg: <span className="font-bold text-[#e6edf3]">{avg}%</span></span>
               <span>Best: <span className="font-bold text-[#e6edf3]">{best}%</span></span>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#6e7681] hover:text-white text-xl leading-none">✕</button>
+          {/* ✕ → FiX icon */}
+          <button onClick={onClose} className="text-[#6e7681] hover:text-white leading-none">
+            <FiX size={18} />
+          </button>
         </div>
 
         <div className="p-5 space-y-5">
@@ -65,10 +81,10 @@ function SubjectModal({ subject, attempts, onClose }) {
             <div>
               <h3 className="text-xs font-bold text-[#6e7681] mb-2">Score History</h3>
               <div className="flex items-end gap-1.5 h-20 bg-[#161b22] rounded-lg px-3 py-2">
-                {sorted.slice(-12).map((a,i) => (
+                {sorted.slice(-12).map((a, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${a.percentage}% — ${a.topic}`}>
                     <div className="w-full rounded-t transition-all"
-                      style={{ height:`${Math.max(4, a.percentage*0.6)}px`, backgroundColor:color, opacity: 0.6 + (i/sorted.length)*0.4 }} />
+                      style={{ height: `${Math.max(4, a.percentage * 0.6)}px`, backgroundColor: color, opacity: 0.6 + (i / sorted.length) * 0.4 }} />
                   </div>
                 ))}
               </div>
@@ -84,7 +100,7 @@ function SubjectModal({ subject, attempts, onClose }) {
             <h3 className="text-xs font-bold text-[#6e7681] mb-3">Topic Breakdown</h3>
             <div className="space-y-3">
               {Object.entries(byTopic).map(([topic, topicAttempts]) => {
-                const topicAvg = Math.round(topicAttempts.reduce((s,a)=>s+a.percentage,0)/topicAttempts.length);
+                const topicAvg = Math.round(topicAttempts.reduce((s, a) => s + a.percentage, 0) / topicAttempts.length);
                 return (
                   <div key={topic}>
                     <div className="flex justify-between text-xs mb-1">
@@ -106,12 +122,12 @@ function SubjectModal({ subject, attempts, onClose }) {
 // ── Progress Widget (embeds in dashboard) ─────────────────────────────────────
 function ProgressWidget() {
   const [attempts, setAttempts] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    const hdrs  = { "Content-Type":"application/json", ...(token?{Authorization:`Bearer ${token}`}:{}) };
+    const hdrs = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
     fetch(`${API_BASE}/quizzes/attempts/mine`, { headers: hdrs })
       .then(r => r.ok ? r.json() : [])
       .then(data => { setAttempts(Array.isArray(data) ? data : []); })
@@ -121,26 +137,29 @@ function ProgressWidget() {
 
   if (loading) return (
     <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5 animate-pulse">
-      <div className="h-4 bg-[#21262d] rounded w-32 mb-4"/>
-      <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="h-6 bg-[#21262d] rounded"/>)}</div>
+      <div className="h-4 bg-[#21262d] rounded w-32 mb-4" />
+      <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-6 bg-[#21262d] rounded" />)}</div>
     </div>
   );
 
   if (attempts.length === 0) return (
     <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5">
-      <h2 className="text-base font-bold mb-3 text-[#e6edf3]">📊 My Progress</h2>
+      {/* 📊 → FiBarChart2 */}
+      <h2 className="text-base font-bold mb-3 text-[#e6edf3] flex items-center gap-2">
+        <FiBarChart2 size={16} className="text-[#2ea043]" /> My Progress
+      </h2>
       <p className="text-sm text-[#6e7681]">Take some quizzes to see your progress here!</p>
-      <Link to="/quizzes" className="inline-block mt-3 text-sm text-[#2ea043] hover:underline">Go to Quizzes →</Link>
+      <Link to="/quizzes" className="inline-flex items-center gap-1 mt-3 text-sm text-[#2ea043] hover:underline">
+        Go to Quizzes <FiArrowRight size={13} />
+      </Link>
     </div>
   );
 
-  // Group by subject
   const bySubject = {};
-  attempts.forEach(a => { if(!bySubject[a.subject]) bySubject[a.subject]=[]; bySubject[a.subject].push(a); });
-  const subjects   = Object.keys(bySubject);
-  const overallAvg = Math.round(attempts.reduce((s,a)=>s+a.percentage,0)/attempts.length);
+  attempts.forEach(a => { if (!bySubject[a.subject]) bySubject[a.subject] = []; bySubject[a.subject].push(a); });
+  const subjects = Object.keys(bySubject);
+  const overallAvg = Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length);
 
-  // Trending subject (most improved)
   let trending = null;
   subjects.forEach(sub => {
     const sa = bySubject[sub];
@@ -153,8 +172,13 @@ function ProgressWidget() {
   return (
     <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-[#e6edf3]">📊 My Progress</h2>
-        <Link to="/quizzes?tab=progress" className="text-xs text-[#2ea043] hover:underline">View all →</Link>
+        {/* 📊 → FiBarChart2 */}
+        <h2 className="text-base font-bold text-[#e6edf3] flex items-center gap-2">
+          <FiBarChart2 size={16} className="text-[#2ea043]" /> My Progress
+        </h2>
+        <Link to="/quizzes?tab=progress" className="text-xs text-[#2ea043] hover:underline flex items-center gap-1">
+          View all <FiArrowRight size={11} />
+        </Link>
       </div>
 
       {/* Overall */}
@@ -166,8 +190,9 @@ function ProgressWidget() {
         <div className="text-right">
           <div className="text-xs text-[#6e7681]">{attempts.length} quizzes</div>
           {trending && (
-            <div className="text-xs text-[#2ea043] mt-0.5">
-              ↑ {trending.subject}
+            <div className="text-xs text-[#2ea043] mt-0.5 flex items-center justify-end gap-1">
+              {/* ↑ → FiTrendingUp */}
+              <FiTrendingUp size={11} /> {trending.subject}
             </div>
           )}
         </div>
@@ -179,14 +204,14 @@ function ProgressWidget() {
 
       {/* Subject breakdown — top 5 */}
       <div className="space-y-2.5 mt-4">
-        {subjects.slice(0,5).map(sub => {
+        {subjects.slice(0, 5).map(sub => {
           const subAttempts = bySubject[sub];
-          const avg = Math.round(subAttempts.reduce((s,a)=>s+a.percentage,0)/subAttempts.length);
+          const avg = Math.round(subAttempts.reduce((s, a) => s + a.percentage, 0) / subAttempts.length);
           const color = SUBJECT_COLORS[sub] || "#2ea043";
           return (
             <button key={sub} onClick={() => setSelected(sub)} className="w-full text-left group">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-semibold group-hover:underline" style={{color}}>{sub}</span>
+                <span className="font-semibold group-hover:underline" style={{ color }}>{sub}</span>
                 <span className="text-[#8b949e]">{avg}%</span>
               </div>
               <ProgressBar value={avg} color={color} />
@@ -207,6 +232,13 @@ function ProgressWidget() {
   );
 }
 
+// ── Activity dot color map ────────────────────────────────────────────────────
+const ACTIVITY_ICONS = {
+  DOWNLOAD:         { Icon: FiDownload,     dot: "text-[#2ea043]" },
+  RESOURCE_VIEWED:  { Icon: FiEye,          dot: "text-[#388bfd]" },
+  QUIZ_COMPLETED:   { Icon: FiCheckCircle,  dot: "text-[#f0883e]" },
+};
+
 // ── Main Student Dashboard ────────────────────────────────────────────────────
 const StudentDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -216,7 +248,7 @@ const StudentDashboard = () => {
   const [error, setError]       = useState(null);
 
   const token = localStorage.getItem("accessToken");
-  const hdrs  = { "Content-Type":"application/json", ...(token?{Authorization:`Bearer ${token}`}:{}) };
+  const hdrs  = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -244,18 +276,25 @@ const StudentDashboard = () => {
   const displaySchool = userData?.school?.name ?? "";
 
   const statCards = [
-    { number:stats?.downloads    ?? "—", label:"Downloads" },
-    { number:stats?.quizzesCount ?? "—", label:"Quizzes Completed" },
-    { number:stats?.pastPapers   ?? "—", label:"Resources Viewed" },
+    { number: stats?.downloads    ?? "—", label: "Downloads",         Icon: FiDownload     },
+    { number: stats?.quizzesCount ?? "—", label: "Quizzes Completed", Icon: FiCheckCircle  },
+    { number: stats?.pastPapers   ?? "—", label: "Resources Viewed",  Icon: FiEye          },
+  ];
+
+  const quickLinks = [
+    { title: "Books Library",    desc: "Browse textbooks and novels", Icon: FiBookOpen,  link: "/books"        },
+    { title: "Past Papers",      desc: "Access exam papers",          Icon: FiFileText,  link: "/past-papers"  },
+    { title: "Practice Quizzes", desc: "Test your knowledge",         Icon: FiEdit3,     link: "/quizzes"      },
+    { title: "Study Materials",  desc: "Notes and worksheets",        Icon: FiBookmark,  link: "/materials"    },
   ];
 
   const formatActivity = item => {
-    const time = new Date(item.createdAt).toLocaleString("en-GB", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const time = new Date(item.createdAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     switch (item.action) {
-      case "DOWNLOAD":      return { text:`Downloaded "${item.resourceTitle ?? "a resource"}"`, time, dot:"bg-[#2ea043]" };
-      case "RESOURCE_VIEWED": return { text:`Viewed "${item.resourceTitle ?? "a resource"}"`, time, dot:"bg-[#388bfd]" };
-      case "QUIZ_COMPLETED":  return { text:`Completed ${item.metadata?.subject ?? ""} quiz — ${item.metadata?.topic ?? ""} (${item.metadata?.percentage ?? 0}%)`, time, dot:"bg-[#f0883e]" };
-      default: return { text:"Activity recorded", time, dot:"bg-[#6e7681]" };
+      case "DOWNLOAD":        return { text: `Downloaded "${item.resourceTitle ?? "a resource"}"`,  time };
+      case "RESOURCE_VIEWED": return { text: `Viewed "${item.resourceTitle ?? "a resource"}"`,       time };
+      case "QUIZ_COMPLETED":  return { text: `Completed ${item.metadata?.subject ?? ""} quiz — ${item.metadata?.topic ?? ""} (${item.metadata?.percentage ?? 0}%)`, time };
+      default:                return { text: "Activity recorded", time };
     }
   };
 
@@ -270,7 +309,7 @@ const StudentDashboard = () => {
       <main className="max-w-6xl mx-auto p-4">
 
         {error && (
-          <div className="mb-4 px-4 py-2 rounded-lg text-sm" style={{backgroundColor:"#3d1f1f",border:"1px solid #f85149",color:"#f85149"}}>{error}</div>
+          <div className="mb-4 px-4 py-2 rounded-lg text-sm" style={{ backgroundColor: "#3d1f1f", border: "1px solid #f85149", color: "#f85149" }}>{error}</div>
         )}
 
         {/* Welcome */}
@@ -283,6 +322,8 @@ const StudentDashboard = () => {
         <section className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           {statCards.map((stat, i) => (
             <div key={i} className="bg-[#161b22] border border-[#21262d] p-5 rounded-lg hover:border-[#2ea043] hover:-translate-y-1 transition">
+              {/* Icon above number */}
+              <stat.Icon size={18} className="text-[#2ea043] mb-2" />
               <div className="text-2xl font-bold text-[#2ea043]">{stat.number}</div>
               <div className="text-sm text-[#6e7681]">{stat.label}</div>
             </div>
@@ -294,18 +335,17 @@ const StudentDashboard = () => {
 
           {/* Quick Access — 2/3 width */}
           <div className="lg:col-span-2">
-            <h2 className="text-xl font-bold mb-4 text-[#e6edf3]">📖 Quick Access</h2>
+            {/* 📖 → FiBookOpen */}
+            <h2 className="text-xl font-bold mb-4 text-[#e6edf3] flex items-center gap-2">
+              <FiBookOpen size={18} className="text-[#2ea043]" /> Quick Access
+            </h2>
             <div className="grid md:grid-cols-2 gap-4">
-              {[
-                { title:"Books Library",    desc:"Browse textbooks and novels", icon:"📚", link:"/books" },
-                { title:"Past Papers",      desc:"Access exam papers",          icon:"📝", link:"/past-papers" },
-                { title:"Practice Quizzes", desc:"Test your knowledge",         icon:"✏️", link:"/quizzes" },
-                { title:"Study Materials",  desc:"Notes and worksheets",        icon:"🎓", link:"/materials" },
-              ].map((item, i) => (
+              {quickLinks.map((item, i) => (
                 <Link key={i} to={item.link}
                   className="bg-[#161b22] border border-[#21262d] rounded-lg overflow-hidden hover:border-[#2ea043] hover:-translate-y-1 transition cursor-pointer block">
-                  <div className="h-24 flex items-center justify-center text-3xl bg-[#0d1117]">
-                    {item.icon}
+                  <div className="h-24 flex items-center justify-center bg-[#0d1117]">
+                    {/* Big centered icon replacing emoji */}
+                    <item.Icon size={36} className="text-[#2ea043]" />
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-[#e6edf3] mb-1">{item.title}</h3>
@@ -326,19 +366,24 @@ const StudentDashboard = () => {
 
         {/* Recent Activity */}
         <section>
-          <h2 className="text-xl font-bold mb-4 text-[#e6edf3]">🕐 Recent Activity</h2>
+          {/* 🕐 → FiClock */}
+          <h2 className="text-xl font-bold mb-4 text-[#e6edf3] flex items-center gap-2">
+            <FiClock size={18} className="text-[#2ea043]" /> Recent Activity
+          </h2>
           <div className="bg-[#161b22] border border-[#21262d] rounded-lg">
             {activity.length === 0 ? (
               <div className="p-6 text-center text-[#6e7681] text-sm">
                 No activity yet. Start by downloading a resource or taking a quiz!
               </div>
             ) : (
-              activity.slice(0,10).map((item, i) => {
-                const { text, time, dot } = formatActivity(item);
+              activity.slice(0, 10).map((item, i) => {
+                const { text, time } = formatActivity(item);
+                const { Icon, dot } = ACTIVITY_ICONS[item.action] ?? { Icon: FiBarChart2, dot: "text-[#6e7681]" };
                 return (
                   <div key={item.id ?? i}
                     className="flex items-start gap-3 p-4 border-b border-[#21262d] last:border-none hover:bg-[#0d1117] transition">
-                    <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                    {/* Colored icon replacing dot */}
+                    <Icon size={15} className={`mt-0.5 flex-shrink-0 ${dot}`} />
                     <div className="flex-1">
                       <div className="text-sm text-[#8b949e]">{text}</div>
                       <div className="text-xs text-[#6e7681] mt-0.5">{time}</div>

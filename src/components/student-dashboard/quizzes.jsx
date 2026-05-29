@@ -1,19 +1,83 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  FiCheck,
+  FiAlertCircle,
+  FiInfo,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiTrash2,
+  FiPlay,
+  FiPrinter,
+  FiArrowLeft,
+  FiLoader,
+  FiChevronRight,
+  FiX,
+  FiEye,
+  FiAward,
+  FiStar,
+  FiRefreshCw,
+  FiSearch,
+} from "react-icons/fi";
+import {
+  GiMicroscope,
+  GiChemicalDrop,
+  GiAtom,
+  GiBrain,
+  GiTeacher,
+} from "react-icons/gi";
+import {
+  MdCalculate,
+  MdMenuBook,
+  MdHistoryEdu,
+  MdPublic,
+  MdQuiz,
+  MdOutlineQuiz,
+  MdSave,
+  MdBarChart,
+  MdHistory,
+  MdSchool,
+  MdScience,
+} from "react-icons/md";
+import {
+  IoWarningOutline,
+  IoFlash,
+  IoPrintOutline,
+  IoRocket,
+} from "react-icons/io5";
+import { FaRobot, FaSave, FaChartLine, FaHistory, FaBrain, FaTrophy, FaRegCheckCircle } from "react-icons/fa";
+import { SiLevelsdotfyi } from "react-icons/si";
+import { BiBookOpen, BiTrendingUp, BiTrendingDown, BiBrain } from "react-icons/bi";
+import { TbProgressCheck } from "react-icons/tb";
+import { VscDebugRestart } from "react-icons/vsc";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 const SUBJECT_TOPICS = {
-  Biology:           ["Cell Structure and Function","Cell Division (Mitosis and Meiosis)","Photosynthesis","Respiration","Transport in Plants","Transport in Animals (Circulatory System)","Nutrition in Plants","Nutrition in Animals (Human Digestive System)","Excretion in Humans","Nervous System","Endocrine System","Reproduction in Plants","Reproduction in Humans","Genetics and Heredity","Evolution and Natural Selection","Ecology and Ecosystems","Classification of Living Things","Disease and Immunity","Biotechnology","Environmental Issues in Malawi"],
-  Mathematics:       ["Number and Numeration","Fractions, Decimals and Percentages","Ratio and Proportion","Algebra: Simplification and Expansion","Linear Equations","Simultaneous Equations","Quadratic Equations","Inequalities","Functions and Graphs","Sequences and Series","Geometry: Lines and Angles","Triangles and Congruence","Circle Theorems","Mensuration: Area and Perimeter","Mensuration: Volume and Surface Area","Trigonometry","Vectors","Matrices","Statistics: Mean, Median and Mode","Probability"],
-  Chemistry:         ["Atomic Structure","The Periodic Table","Chemical Bonding (Ionic and Covalent)","States of Matter","Chemical Reactions and Equations","Acids, Bases and Salts","Oxidation and Reduction (Redox)","Electrochemistry","Rates of Reaction","Energy Changes in Reactions","The Mole Concept","Gases and Gas Laws","Water and Solutions","Metals and Non-Metals","Carbon and Its Compounds","Organic Chemistry: Alkanes and Alkenes","Organic Chemistry: Alcohols and Acids","Polymers and Plastics","Environmental Chemistry","Industrial Chemistry in Malawi"],
-  Physics:           ["Measurements and Units","Motion: Speed, Velocity and Acceleration","Newton's Laws of Motion","Forces and Equilibrium","Work, Energy and Power","Momentum and Collisions","Pressure in Solids, Liquids and Gases","Heat and Temperature","Thermal Expansion","Transfer of Heat","Waves: Properties and Types","Sound Waves","Light: Reflection","Light: Refraction and Lenses","Electricity: Current and Circuits","Ohm's Law and Resistance","Magnetism and Electromagnetism","Electromagnetic Induction","Radioactivity","Electronics and Logic Gates"],
-  English:           ["Reading Comprehension","Summary Writing","Essay Writing: Argumentative","Essay Writing: Descriptive","Essay Writing: Narrative","Letter Writing: Formal","Letter Writing: Informal","Report Writing","Grammar: Parts of Speech","Grammar: Tenses","Grammar: Active and Passive Voice","Grammar: Direct and Indirect Speech","Vocabulary and Word Formation","Punctuation and Spelling","Poetry: Analysis and Appreciation","Prose: Novel Study","Drama: Play Study","Oral Communication Skills","Debate and Discussion","Literature in Malawian Context"],
-  Geography:         ["Map Reading and Interpretation","Weather and Climate","Climate Regions of Malawi","Malawi: Physical Features","Malawi: Lake Malawi","Malawi: Rivers and Water Resources","Population Distribution in Malawi","Rural and Urban Settlements","Agriculture in Malawi","Cash Crops: Tobacco, Tea and Sugar","Fishing Industry in Malawi","Mining and Natural Resources","Transport and Communication in Malawi","Trade and Economic Development","Africa: Physical Geography","Africa: Political Geography","Plate Tectonics and Earthquakes","Volcanoes","Soil Types and Erosion","Environmental Conservation in Malawi"],
-  History:           ["Early Peoples of Malawi","Migration and Settlement of Bantu People","Maravi Kingdom","Ngoni Migration and Settlement","Yao and Arab Slave Trade","European Exploration of Africa","Livingstone and Missionaries in Malawi","British Central Africa Protectorate","Colonial Administration in Nyasaland","Resistance to Colonial Rule","John Chilembwe Rising 1915","Nyasaland African Congress","Federation of Rhodesia and Nyasaland","Malawi Congress Party and Independence","Dr Hastings Kamuzu Banda and Independence 1964","One Party State in Malawi","Multiparty Democracy 1993","Post-Independence Development in Malawi","Africa: Colonisation and Independence","World War I and World War II"],
-  "Civic Education": ["Citizenship and Responsibilities","Human Rights","Children's Rights in Malawi","The Constitution of Malawi","Branches of Government","The Executive: President and Cabinet","The Legislature: Parliament of Malawi","The Judiciary and Rule of Law","Local Government in Malawi","Elections and Democracy","Political Parties in Malawi","Gender Equality and Equity","HIV and AIDS Awareness","Drug and Substance Abuse","Environmental Rights and Duties","Community Development","Conflict Resolution","National Symbols of Malawi","Regional and International Organisations (AU, SADC, UN)","Corruption and Good Governance"],
-  "Computer Studies": ["Introduction to Computers","Computer Hardware Components","Computer Software: System and Application","Operating Systems","File Management","Word Processing (Microsoft Word)","Spreadsheets (Microsoft Excel)","Presentation Software (Microsoft PowerPoint)","Database Concepts","Internet and Email","World Wide Web and Browsers","Computer Networks and Types","Network Security and Cyber Safety","Introduction to Programming","Algorithms and Flowcharts","Basic Programming in Python","HTML and Web Design Basics","Data Representation (Binary and Hexadecimal)","ICT in Society and Development","ICT in Malawi: E-government and Mobile Money"],
+  Biology: ["Cell Structure and Function", "Cell Division (Mitosis and Meiosis)", "Photosynthesis", "Respiration", "Transport in Plants", "Transport in Animals (Circulatory System)", "Nutrition in Plants", "Nutrition in Animals (Human Digestive System)", "Excretion in Humans", "Nervous System", "Endocrine System", "Reproduction in Plants", "Reproduction in Humans", "Genetics and Heredity", "Evolution and Natural Selection", "Ecology and Ecosystems", "Classification of Living Things", "Disease and Immunity", "Biotechnology", "Environmental Issues in Malawi"],
+  Mathematics: ["Number and Numeration", "Fractions, Decimals and Percentages", "Ratio and Proportion", "Algebra: Simplification and Expansion", "Linear Equations", "Simultaneous Equations", "Quadratic Equations", "Inequalities", "Functions and Graphs", "Sequences and Series", "Geometry: Lines and Angles", "Triangles and Congruence", "Circle Theorems", "Mensuration: Area and Perimeter", "Mensuration: Volume and Surface Area", "Trigonometry", "Vectors", "Matrices", "Statistics: Mean, Median and Mode", "Probability"],
+  Chemistry: ["Atomic Structure", "The Periodic Table", "Chemical Bonding (Ionic and Covalent)", "States of Matter", "Chemical Reactions and Equations", "Acids, Bases and Salts", "Oxidation and Reduction (Redox)", "Electrochemistry", "Rates of Reaction", "Energy Changes in Reactions", "The Mole Concept", "Gases and Gas Laws", "Water and Solutions", "Metals and Non-Metals", "Carbon and Its Compounds", "Organic Chemistry: Alkanes and Alkenes", "Organic Chemistry: Alcohols and Acids", "Polymers and Plastics", "Environmental Chemistry", "Industrial Chemistry in Malawi"],
+  Physics: ["Measurements and Units", "Motion: Speed, Velocity and Acceleration", "Newton's Laws of Motion", "Forces and Equilibrium", "Work, Energy and Power", "Momentum and Collisions", "Pressure in Solids, Liquids and Gases", "Heat and Temperature", "Thermal Expansion", "Transfer of Heat", "Waves: Properties and Types", "Sound Waves", "Light: Reflection", "Light: Refraction and Lenses", "Electricity: Current and Circuits", "Ohm's Law and Resistance", "Magnetism and Electromagnetism", "Electromagnetic Induction", "Radioactivity", "Electronics and Logic Gates"],
+  English: ["Reading Comprehension", "Summary Writing", "Essay Writing: Argumentative", "Essay Writing: Descriptive", "Essay Writing: Narrative", "Letter Writing: Formal", "Letter Writing: Informal", "Report Writing", "Grammar: Parts of Speech", "Grammar: Tenses", "Grammar: Active and Passive Voice", "Grammar: Direct and Indirect Speech", "Vocabulary and Word Formation", "Punctuation and Spelling", "Poetry: Analysis and Appreciation", "Prose: Novel Study", "Drama: Play Study", "Oral Communication Skills", "Debate and Discussion", "Literature in Malawian Context"],
+  Geography: ["Map Reading and Interpretation", "Weather and Climate", "Climate Regions of Malawi", "Malawi: Physical Features", "Malawi: Lake Malawi", "Malawi: Rivers and Water Resources", "Population Distribution in Malawi", "Rural and Urban Settlements", "Agriculture in Malawi", "Cash Crops: Tobacco, Tea and Sugar", "Fishing Industry in Malawi", "Mining and Natural Resources", "Transport and Communication in Malawi", "Trade and Economic Development", "Africa: Physical Geography", "Africa: Political Geography", "Plate Tectonics and Earthquakes", "Volcanoes", "Soil Types and Erosion", "Environmental Conservation in Malawi"],
+  History: ["Early Peoples of Malawi", "Migration and Settlement of Bantu People", "Maravi Kingdom", "Ngoni Migration and Settlement", "Yao and Arab Slave Trade", "European Exploration of Africa", "Livingstone and Missionaries in Malawi", "British Central Africa Protectorate", "Colonial Administration in Nyasaland", "Resistance to Colonial Rule", "John Chilembwe Rising 1915", "Nyasaland African Congress", "Federation of Rhodesia and Nyasaland", "Malawi Congress Party and Independence", "Dr Hastings Kamuzu Banda and Independence 1964", "One Party State in Malawi", "Multiparty Democracy 1993", "Post-Independence Development in Malawi", "Africa: Colonisation and Independence", "World War I and World War II"],
+  "Civic Education": ["Citizenship and Responsibilities", "Human Rights", "Children's Rights in Malawi", "The Constitution of Malawi", "Branches of Government", "The Executive: President and Cabinet", "The Legislature: Parliament of Malawi", "The Judiciary and Rule of Law", "Local Government in Malawi", "Elections and Democracy", "Political Parties in Malawi", "Gender Equality and Equity", "HIV and AIDS Awareness", "Drug and Substance Abuse", "Environmental Rights and Duties", "Community Development", "Conflict Resolution", "National Symbols of Malawi", "Regional and International Organisations (AU, SADC, UN)", "Corruption and Good Governance"],
+  "Computer Studies": ["Introduction to Computers", "Computer Hardware Components", "Computer Software: System and Application", "Operating Systems", "File Management", "Word Processing (Microsoft Word)", "Spreadsheets (Microsoft Excel)", "Presentation Software (Microsoft PowerPoint)", "Database Concepts", "Internet and Email", "World Wide Web and Browsers", "Computer Networks and Types", "Network Security and Cyber Safety", "Introduction to Programming", "Algorithms and Flowcharts", "Basic Programming in Python", "HTML and Web Design Basics", "Data Representation (Binary and Hexadecimal)", "ICT in Society and Development", "ICT in Malawi: E-government and Mobile Money"],
 };
-const LEVELS = ["Form 1","Form 2","Form 3","Form 4"];
+
+const LEVELS = ["Form 1", "Form 2", "Form 3", "Form 4"];
+
+const SUBJECT_ICON_MAP = {
+  Mathematics: { Icon: MdCalculate, color: "#1f6feb" },
+  Biology: { Icon: GiMicroscope, color: "#2ea043" },
+  Chemistry: { Icon: GiChemicalDrop, color: "#a371f7" },
+  Physics: { Icon: GiAtom, color: "#f0883e" },
+  English: { Icon: MdMenuBook, color: "#e3b341" },
+  History: { Icon: MdHistoryEdu, color: "#da3633" },
+  Geography: { Icon: MdPublic, color: "#58a6ff" },
+  "Civic Education": { Icon: MdSchool, color: "#56d364" },
+  "Computer Studies": { Icon: MdScience, color: "#79c0ff" },
+  Other: { Icon: BiBookOpen, color: "#6e7681" },
+};
 
 const SUBJECT_COLORS = {
   Biology: "#2ea043", Mathematics: "#1f6feb", Chemistry: "#a371f7",
@@ -21,7 +85,12 @@ const SUBJECT_COLORS = {
   History: "#da3633", "Civic Education": "#56d364", "Computer Studies": "#79c0ff",
 };
 
-const token   = () => localStorage.getItem("accessToken");
+function SubjectIcon({ name, size = 20 }) {
+  const entry = SUBJECT_ICON_MAP[name] ?? SUBJECT_ICON_MAP["Other"];
+  return <entry.Icon size={size} style={{ color: entry.color }} />;
+}
+
+const token = () => localStorage.getItem("accessToken");
 const authHdr = () => ({ "Content-Type": "application/json", ...(token() ? { Authorization: `Bearer ${token()}` } : {}) });
 
 async function logAttempt(payload) {
@@ -29,11 +98,10 @@ async function logAttempt(payload) {
     await fetch(`${API_BASE}/quizzes/attempts`, {
       method: "POST", headers: authHdr(), body: JSON.stringify(payload),
     });
-  } catch {}
+  } catch { }
 }
 
 // ── Toast System ──────────────────────────────────────────────────────────────
-// Call showToast(msg, type) from anywhere via the ref exposed at module level
 let _showToast = null;
 
 function ToastContainer() {
@@ -56,21 +124,21 @@ function ToastContainer() {
         <div key={t.id}
           className="pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-lg shadow-xl text-sm font-semibold max-w-sm animate-fade-in"
           style={{
-            backgroundColor: t.type === "error"   ? "#3d1a1a"
-                           : t.type === "warning" ? "#3d2e0a"
-                           : t.type === "info"    ? "#0d2a3d"
-                           : "#1a3a2a",
-            border: `1px solid ${t.type === "error"   ? "#f85149"
-                               : t.type === "warning" ? "#e3b341"
-                               : t.type === "info"    ? "#58a6ff"
-                               : "#2ea043"}`,
-            color:  t.type === "error"   ? "#f85149"
-                  : t.type === "warning" ? "#e3b341"
-                  : t.type === "info"    ? "#58a6ff"
+            backgroundColor: t.type === "error" ? "#3d1a1a"
+              : t.type === "warning" ? "#3d2e0a"
+                : t.type === "info" ? "#0d2a3d"
+                  : "#1a3a2a",
+            border: `1px solid ${t.type === "error" ? "#f85149"
+                : t.type === "warning" ? "#e3b341"
+                  : t.type === "info" ? "#58a6ff"
+                    : "#2ea043"}`,
+            color: t.type === "error" ? "#f85149"
+              : t.type === "warning" ? "#e3b341"
+                : t.type === "info" ? "#58a6ff"
                   : "#2ea043",
           }}>
           <span className="flex-shrink-0 text-base">
-            {t.type === "error" ? "⚠️" : t.type === "warning" ? "⚡" : t.type === "info" ? "ℹ️" : "✅"}
+            {t.type === "error" ? <IoWarningOutline /> : t.type === "warning" ? <IoFlash /> : t.type === "info" ? <FiInfo /> : <FiCheck />}
           </span>
           <span className="leading-snug">{t.msg}</span>
         </div>
@@ -79,14 +147,13 @@ function ToastContainer() {
   );
 }
 
-// Helper — call this anywhere in the file
 function showToast(msg, type = "success") {
   if (_showToast) _showToast(msg, type);
 }
 
 // ── AI Recommendations ────────────────────────────────────────────────────────
 function AIRecommendations({ subject, topic, score, total }) {
-  const [recs, setRecs]       = useState(null);
+  const [recs, setRecs] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -117,8 +184,8 @@ function AIRecommendations({ subject, topic, score, total }) {
 
   if (loading) return (
     <div className="mt-4 bg-[#0d1117] border border-[#21262d] rounded-lg p-4 animate-pulse">
-      <div className="h-3 bg-[#21262d] rounded w-48 mb-3"/>
-      <div className="space-y-2">{[1,2,3].map(i=><div key={i} className="h-2 bg-[#21262d] rounded"/>)}</div>
+      <div className="h-3 bg-[#21262d] rounded w-48 mb-3" />
+      <div className="space-y-2">{[1, 2, 3].map(i => <div key={i} className="h-2 bg-[#21262d] rounded" />)}</div>
     </div>
   );
   if (!recs) return null;
@@ -126,13 +193,13 @@ function AIRecommendations({ subject, topic, score, total }) {
   return (
     <div className="mt-4 bg-[#0d1117] border border-[#1f6feb] rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[#58a6ff]">🤖</span>
+        <FaRobot className="text-[#58a6ff]" />
         <span className="text-sm font-bold text-[#58a6ff]">AI Study Recommendations</span>
       </div>
       <div className="space-y-3">
         {recs.map((r, i) => (
           <div key={i} className="flex gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#1f6feb] text-white text-xs flex items-center justify-center flex-shrink-0 font-bold">{i+1}</div>
+            <div className="w-6 h-6 rounded-full bg-[#1f6feb] text-white text-xs flex items-center justify-center flex-shrink-0 font-bold">{i + 1}</div>
             <div>
               <p className="text-sm font-semibold text-[#e6edf3]">{r.tip}</p>
               <p className="text-xs text-[#8b949e] mt-0.5">{r.detail}</p>
@@ -159,23 +226,26 @@ function ProgressBar({ value, color = "#2ea043" }) {
 
 // ── Subject Progress Card ─────────────────────────────────────────────────────
 function SubjectProgressCard({ subject, attempts, onClick }) {
-  const avg   = attempts.length > 0 ? Math.round(attempts.reduce((s,a)=>s+a.percentage,0)/attempts.length) : 0;
+  const avg = attempts.length > 0 ? Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length) : 0;
   const color = SUBJECT_COLORS[subject] || "#2ea043";
-  const best  = attempts.length > 0 ? Math.max(...attempts.map(a=>a.percentage)) : 0;
+  const best = attempts.length > 0 ? Math.max(...attempts.map(a => a.percentage)) : 0;
   const trend = attempts.length >= 2 ? attempts[0].percentage - attempts[1].percentage : 0;
 
   return (
     <button onClick={onClick}
       className="bg-[#161b22] border border-[#21262d] rounded-lg p-4 text-left hover:border-[#2ea043] transition w-full group">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold" style={{ color }}>{subject}</span>
+        <div className="flex items-center gap-2">
+          <SubjectIcon name={subject} size={18} />
+          <span className="text-sm font-bold" style={{ color }}>{subject}</span>
+        </div>
         <div className="flex items-center gap-1">
           {trend !== 0 && (
-            <span className={`text-xs ${trend > 0 ? "text-[#2ea043]" : "text-[#da3633]"}`}>
-              {trend > 0 ? "↑" : "↓"}{Math.abs(trend)}%
+            <span className={`text-xs flex items-center gap-0.5 ${trend > 0 ? "text-[#2ea043]" : "text-[#da3633]"}`}>
+              {trend > 0 ? <BiTrendingUp /> : <BiTrendingDown />}{Math.abs(trend)}%
             </span>
           )}
-          <span className="text-xs text-[#6e7681]">{attempts.length} quiz{attempts.length!==1?"zes":""}</span>
+          <span className="text-xs text-[#6e7681]">{attempts.length} quiz{attempts.length !== 1 ? "zes" : ""}</span>
         </div>
       </div>
       <div className="mb-2"><ProgressBar value={avg} color={color} /></div>
@@ -183,15 +253,17 @@ function SubjectProgressCard({ subject, attempts, onClick }) {
         <span>Avg: <span className="font-bold text-[#e6edf3]">{avg}%</span></span>
         <span>Best: <span className="font-bold text-[#e6edf3]">{best}%</span></span>
       </div>
-      <div className="text-xs text-[#2ea043] mt-1 opacity-0 group-hover:opacity-100 transition">View details →</div>
+      <div className="text-xs text-[#2ea043] mt-1 opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+        View details <FiChevronRight className="text-xs" />
+      </div>
     </button>
   );
 }
 
 // ── Subject Detail Modal ──────────────────────────────────────────────────────
 function SubjectDetailModal({ subject, attempts, onClose }) {
-  const color  = SUBJECT_COLORS[subject] || "#2ea043";
-  const sorted = [...attempts].sort((a,b) => new Date(a.completedAt)-new Date(b.completedAt));
+  const color = SUBJECT_COLORS[subject] || "#2ea043";
+  const sorted = [...attempts].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
   const byTopic = {};
   attempts.forEach(a => {
     if (!byTopic[a.topic]) byTopic[a.topic] = [];
@@ -201,22 +273,27 @@ function SubjectDetailModal({ subject, attempts, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#161b22] border border-[#21262d] rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-        onClick={e=>e.stopPropagation()}>
+        onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-[#21262d] flex items-center justify-between sticky top-0 bg-[#161b22]">
           <div>
-            <h2 className="text-lg font-bold" style={{color}}>{subject}</h2>
+            <div className="flex items-center gap-2">
+              <SubjectIcon name={subject} size={24} />
+              <h2 className="text-lg font-bold" style={{ color }}>{subject}</h2>
+            </div>
             <p className="text-xs text-[#6e7681]">{attempts.length} attempts total</p>
           </div>
-          <button onClick={onClose} className="text-[#6e7681] hover:text-[#e6edf3] text-xl">✕</button>
+          <button onClick={onClose} className="text-[#6e7681] hover:text-[#e6edf3] text-xl">
+            <FiX />
+          </button>
         </div>
         <div className="p-6">
           {sorted.length > 1 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold mb-3 text-[#8b949e]">Score History</h3>
               <div className="flex items-end gap-2 h-24">
-                {sorted.slice(-10).map((a,i) => (
+                {sorted.slice(-10).map((a, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full rounded-t-sm" style={{height:`${a.percentage*0.8}%`,backgroundColor:color,minHeight:4}}/>
+                    <div className="w-full rounded-t-sm" style={{ height: `${a.percentage * 0.8}%`, backgroundColor: color, minHeight: 4 }} />
                     <span className="text-[10px] text-[#6e7681]">{a.percentage}%</span>
                   </div>
                 ))}
@@ -226,7 +303,7 @@ function SubjectDetailModal({ subject, attempts, onClose }) {
           <h3 className="text-sm font-semibold mb-3 text-[#8b949e]">Performance by Topic</h3>
           <div className="space-y-3">
             {Object.entries(byTopic).map(([topic, topicAttempts]) => {
-              const avg = Math.round(topicAttempts.reduce((s,a)=>s+a.percentage,0)/topicAttempts.length);
+              const avg = Math.round(topicAttempts.reduce((s, a) => s + a.percentage, 0) / topicAttempts.length);
               return (
                 <div key={topic}>
                   <div className="flex justify-between text-xs mb-1">
@@ -246,20 +323,20 @@ function SubjectDetailModal({ subject, attempts, onClose }) {
 
 // ── Saved AI Quizzes Tab ──────────────────────────────────────────────────────
 function SavedAIQuizzesTab({ onRetake }) {
-  const [saved, setSaved]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
+  const [saved, setSaved] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [attempts, setAttempts] = useState([]);
 
   const load = async () => {
     setLoading(true);
     try {
       const [savedRes, attRes] = await Promise.all([
-        fetch(`${API_BASE}/quizzes/saved-ai`,      { headers: authHdr() }),
+        fetch(`${API_BASE}/quizzes/saved-ai`, { headers: authHdr() }),
         fetch(`${API_BASE}/quizzes/attempts/mine`, { headers: authHdr() }),
       ]);
       if (savedRes.ok) setSaved(await savedRes.json());
-      if (attRes.ok)   setAttempts(await attRes.json());
+      if (attRes.ok) setAttempts(await attRes.json());
     } catch {
       showToast("Failed to load saved quizzes.", "error");
     } finally { setLoading(false); }
@@ -267,7 +344,6 @@ function SavedAIQuizzesTab({ onRetake }) {
 
   useEffect(() => { load(); }, []);
 
-  // Map quizId → last attempt percentage
   const lastScoreMap = {};
   attempts.forEach(a => {
     if (a.quizId && !(a.quizId in lastScoreMap)) {
@@ -291,24 +367,27 @@ function SavedAIQuizzesTab({ onRetake }) {
 
   const filtered = saved.filter(q =>
     (q.subject ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    (q.title   ?? "").toLowerCase().includes(search.toLowerCase())
+    (q.title ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) return (
     <div className="text-center py-12">
-      <div className="w-6 h-6 border-2 border-[#2ea043] border-t-transparent rounded-full animate-spin mx-auto mb-2"/>
+      <div className="w-6 h-6 border-2 border-[#2ea043] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
       <p className="text-sm text-[#8b949e]">Loading saved quizzes...</p>
     </div>
   );
 
   return (
     <div>
-      <input type="text" placeholder="Search saved quizzes..." value={search} onChange={e=>setSearch(e.target.value)}
-        className="w-full mb-4 border-2 border-[#21262d] bg-[#161b22] text-[#e6edf3] rounded-lg px-4 py-2 focus:border-[#2ea043] outline-none text-sm"/>
+      <div className="relative mb-4">
+        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e7681]" size={16} />
+        <input type="text" placeholder="Search saved quizzes..." value={search} onChange={e => setSearch(e.target.value)}
+          className="w-full border-2 border-[#21262d] bg-[#161b22] text-[#e6edf3] rounded-lg pl-10 pr-4 py-2 focus:border-[#2ea043] outline-none text-sm" />
+      </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-[#6e7681]">
-          <div className="text-4xl mb-3">🤖</div>
+          <div className="text-4xl mb-3 flex justify-center"><BiBrain size={48} /></div>
           <p className="text-sm">No saved AI quizzes yet. Generate a quiz — it will be saved here automatically.</p>
         </div>
       ) : (
@@ -317,19 +396,25 @@ function SavedAIQuizzesTab({ onRetake }) {
             const lastScore = lastScoreMap[q.id] ?? null;
             const normalised = (q.questions ?? []).map(qu => ({
               question: qu.text ?? qu.question,
-              options:  qu.options,
-              correct:  qu.answer ?? qu.correct ?? 0,
+              options: qu.options,
+              correct: qu.answer ?? qu.correct ?? 0,
             }));
             return (
               <div key={q.id} className="bg-[#161b22] border border-[#21262d] rounded-lg p-5 hover:border-[#2ea043] transition">
                 <div className="flex gap-2 flex-wrap mb-2">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1a3a2a] text-[#2ea043]">{q.subject}</span>
-                  <span className="text-xs px-2 py-0.5 rounded border border-[#21262d] text-[#6e7681]">{q.form}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-[#1a2a3a] text-[#58a6ff]">🤖 AI Saved</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1a3a2a] text-[#2ea043] flex items-center gap-1">
+                    <SubjectIcon name={q.subject} size={12} /> {q.subject}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded border border-[#21262d] text-[#6e7681] flex items-center gap-1">
+                    <SiLevelsdotfyi /> {q.form}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-[#1a2a3a] text-[#58a6ff] flex items-center gap-1">
+                    <FaRobot /> AI Saved
+                  </span>
                 </div>
                 <h3 className="font-semibold text-[#e6edf3] mb-1 text-sm">{q.title}</h3>
                 <p className="text-xs text-[#6e7681] mb-3">
-                  {q.questions?.length ?? 0} questions · Saved {new Date(q.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}
+                  <MdQuiz className="inline mr-1" size={12} /> {q.questions?.length ?? 0} questions · Saved {new Date(q.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
                 {lastScore != null && (
                   <div className="mb-3">
@@ -337,16 +422,18 @@ function SavedAIQuizzesTab({ onRetake }) {
                       <span className="text-[#6e7681]">Last score</span>
                       <span className="font-bold text-[#2ea043]">{lastScore}%</span>
                     </div>
-                    <ProgressBar value={lastScore}/>
+                    <ProgressBar value={lastScore} />
                   </div>
                 )}
                 <div className="flex gap-2">
                   <button onClick={() => onRetake({ ...q, questions: normalised, _dbId: q.id })}
-                    className="flex-1 bg-[#2ea043] text-white text-xs font-semibold px-3 py-2 rounded hover:bg-[#238636] transition">
-                    ▶ {lastScore != null ? "Retake Quiz" : "Take Quiz"}
+                    className="flex-1 bg-[#2ea043] text-white text-xs font-semibold px-3 py-2 rounded hover:bg-[#238636] transition flex items-center justify-center gap-1">
+                    <FiPlay size={12} /> {lastScore != null ? "Retake Quiz" : "Take Quiz"}
                   </button>
                   <button onClick={() => deleteQuiz(q.id)}
-                    className="text-xs text-[#f85149] hover:text-[#da3633] px-2 py-2 transition">🗑</button>
+                    className="text-xs text-[#f85149] hover:text-[#da3633] px-2 py-2 transition">
+                    <FiTrash2 />
+                  </button>
                 </div>
               </div>
             );
@@ -360,7 +447,7 @@ function SavedAIQuizzesTab({ onRetake }) {
 // ── Progress Tab ──────────────────────────────────────────────────────────────
 function ProgressTab() {
   const [attempts, setAttempts] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
@@ -368,14 +455,14 @@ function ProgressTab() {
       try {
         const res = await fetch(`${API_BASE}/quizzes/attempts/mine`, { headers: authHdr() });
         if (res.ok) setAttempts(await res.json());
-      } catch {}
+      } catch { }
       finally { setLoading(false); }
     };
     load();
   }, []);
 
   if (loading) return (
-    <div className="space-y-4">{[1,2,3].map(i=><div key={i} className="h-20 bg-[#161b22] rounded-lg animate-pulse"/>)}</div>
+    <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-20 bg-[#161b22] rounded-lg animate-pulse" />)}</div>
   );
 
   const bySubject = {};
@@ -383,12 +470,12 @@ function ProgressTab() {
     if (!bySubject[a.subject]) bySubject[a.subject] = [];
     bySubject[a.subject].push(a);
   });
-  const subjects     = Object.keys(bySubject);
-  const overallAvg   = attempts.length > 0 ? Math.round(attempts.reduce((s,a)=>s+a.percentage,0)/attempts.length) : 0;
-  const recent       = attempts.slice(0,5);
-  const prev         = attempts.slice(5,10);
-  const recentAvg    = recent.length ? Math.round(recent.reduce((s,a)=>s+a.percentage,0)/recent.length) : 0;
-  const prevAvg      = prev.length   ? Math.round(prev.reduce((s,a)=>s+a.percentage,0)/prev.length) : 0;
+  const subjects = Object.keys(bySubject);
+  const overallAvg = attempts.length > 0 ? Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length) : 0;
+  const recent = attempts.slice(0, 5);
+  const prev = attempts.slice(5, 10);
+  const recentAvg = recent.length ? Math.round(recent.reduce((s, a) => s + a.percentage, 0) / recent.length) : 0;
+  const prevAvg = prev.length ? Math.round(prev.reduce((s, a) => s + a.percentage, 0) / prev.length) : 0;
   const overallTrend = recentAvg - prevAvg;
 
   return (
@@ -402,17 +489,18 @@ function ProgressTab() {
           <div className="text-right">
             <div className="text-3xl font-bold text-[#2ea043]">{overallAvg}%</div>
             {overallTrend !== 0 && prev.length > 0 && (
-              <div className={`text-xs ${overallTrend > 0 ? "text-[#2ea043]" : "text-[#da3633]"}`}>
-                {overallTrend > 0 ? "↑" : "↓"} {Math.abs(overallTrend)}% vs last period
+              <div className={`text-xs flex items-center gap-0.5 justify-end ${overallTrend > 0 ? "text-[#2ea043]" : "text-[#da3633]"}`}>
+                {overallTrend > 0 ? <BiTrendingUp /> : <BiTrendingDown />} {Math.abs(overallTrend)}% vs last period
               </div>
             )}
           </div>
         </div>
-        <ProgressBar value={overallAvg}/>
-        <div className="mt-3 text-xs text-[#6e7681]">
-          {overallAvg >= 75 ? "🌟 Excellent work! Keep it up!" :
-           overallAvg >= 50 ? "📈 Good progress! Push for 75%+" :
-           "💪 Keep practising — you'll get there!"}
+        <ProgressBar value={overallAvg} />
+        <div className="mt-3 text-xs text-[#6e7681] flex items-center gap-1">
+          {overallAvg >= 75 ? <FiAward className="text-[#e3b341]" /> : overallAvg >= 50 ? <FiTrendingUp /> : <GiBrain />}
+          {overallAvg >= 75 ? " Excellent work! Keep it up!" :
+            overallAvg >= 50 ? " Good progress! Push for 75%+" :
+              " Keep practising — you'll get there!"}
         </div>
       </div>
 
@@ -422,18 +510,21 @@ function ProgressTab() {
           <div className="space-y-4">
             {subjects.map(sub => {
               const subAttempts = bySubject[sub];
-              const avg   = Math.round(subAttempts.reduce((s,a)=>s+a.percentage,0)/subAttempts.length);
+              const avg = Math.round(subAttempts.reduce((s, a) => s + a.percentage, 0) / subAttempts.length);
               const color = SUBJECT_COLORS[sub] || "#2ea043";
               return (
                 <button key={sub} onClick={() => setSelected(sub)} className="w-full text-left group">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold group-hover:underline" style={{color}}>{sub}</span>
+                    <div className="flex items-center gap-2">
+                      <SubjectIcon name={sub} size={16} />
+                      <span className="text-sm font-semibold group-hover:underline" style={{ color }}>{sub}</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[#6e7681]">{subAttempts.length} attempts</span>
                       <span className="text-sm font-bold text-[#e6edf3]">{avg}%</span>
                     </div>
                   </div>
-                  <ProgressBar value={avg} color={color}/>
+                  <ProgressBar value={avg} color={color} />
                 </button>
               );
             })}
@@ -443,39 +534,39 @@ function ProgressTab() {
 
       {subjects.length === 0 ? (
         <div className="text-center py-16 text-[#6e7681]">
-          <div className="text-4xl mb-3">📊</div>
+          <div className="text-4xl mb-3 flex justify-center"><MdBarChart size={48} /></div>
           <p className="text-sm">No quiz data yet. Take some quizzes to track your progress!</p>
         </div>
       ) : (
         <>
-          <h3 className="text-sm font-bold mb-3 text-[#8b949e]">Subjects (click for details)</h3>
+          <h3 className="text-sm font-bold mb-3 text-[#8b949e] flex items-center gap-1">
+            <FiEye /> Subjects (click for details)
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {subjects.map(sub => (
-              <SubjectProgressCard key={sub} subject={sub} attempts={bySubject[sub]} onClick={() => setSelected(sub)}/>
+              <SubjectProgressCard key={sub} subject={sub} attempts={bySubject[sub]} onClick={() => setSelected(sub)} />
             ))}
           </div>
         </>
       )}
 
       {selected && (
-        <SubjectDetailModal subject={selected} attempts={bySubject[selected]} onClose={() => setSelected(null)}/>
+        <SubjectDetailModal subject={selected} attempts={bySubject[selected]} onClose={() => setSelected(null)} />
       )}
     </div>
   );
 }
 
 // ── Quiz Runner ───────────────────────────────────────────────────────────────
-// Auto-saves AI quizzes on first completion. No manual save button.
 function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
-  const [answers, setAnswers]   = useState({});
-  const [score, setScore]       = useState(null);
+  const [answers, setAnswers] = useState({});
+  const [score, setScore] = useState(null);
   const [showRecs, setShowRecs] = useState(false);
-  const autoSaveFired           = useRef(false); // prevent double-save on re-render
+  const autoSaveFired = useRef(false);
 
   const select = (qi, oi) => { if (score !== null) return; setAnswers(a => ({ ...a, [qi]: oi })); };
 
   const submit = async () => {
-    // Validate — all questions answered
     if (Object.keys(answers).length < questions.length) {
       const unanswered = questions.length - Object.keys(answers).length;
       showToast(
@@ -485,14 +576,12 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
       return;
     }
 
-    // Score
     let correct = 0;
     questions.forEach((q, i) => { if (answers[i] === (q.correct ?? q.answer)) correct++; });
     setScore(correct);
 
     const pct = Math.round((correct / questions.length) * 100);
 
-    // Log attempt
     await logAttempt({
       source, quizId: quizId ?? null,
       subject: meta.subject, topic: meta.topic ?? meta.title,
@@ -501,7 +590,6 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
       answers: Object.values(answers), questions,
     });
 
-    // Auto-save AI quizzes to DB (only on first completion, not retakes)
     if (source === "AI" && !isSaved && !autoSaveFired.current) {
       autoSaveFired.current = true;
       try {
@@ -509,29 +597,27 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
           method: "POST",
           headers: authHdr(),
           body: JSON.stringify({
-            subject:   meta.subject,
-            level:     meta.level,
-            topic:     meta.topic,
+            subject: meta.subject,
+            level: meta.level,
+            topic: meta.topic,
             questions,
           }),
         });
         if (res.ok) {
-          showToast("Quiz saved to your library automatically! Find it in 💾 Saved AI.", "info");
+          showToast("Quiz saved to your library automatically! Find it in Saved AI.", "info");
         }
-      } catch {
-        // Silent fail — don't block the results screen
-      }
+      } catch { }
     }
   };
 
   const answered = Object.keys(answers).length;
-  const fillPct  = Math.round((answered / questions.length) * 100);
+  const fillPct = Math.round((answered / questions.length) * 100);
 
   const optionStyle = (qi, oi) => {
     if (score === null)
       return answers[qi] === oi ? "border-[#2ea043] bg-[#2ea04320]" : "border-[#21262d] hover:bg-[#21262d]";
     const correct = questions[qi].correct ?? questions[qi].answer;
-    if (correct === oi)     return "border-[#2ea043] bg-[#2ea04320]";
+    if (correct === oi) return "border-[#2ea043] bg-[#2ea04320]";
     if (answers[qi] === oi) return "border-[#da3633] bg-[#da363320]";
     return "border-[#21262d] opacity-50";
   };
@@ -539,23 +625,26 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between text-sm text-[#8b949e] mb-2">
-        <span>{meta.subject} · {meta.level ?? meta.form} · {meta.topic ?? meta.title}</span>
+        <div className="flex items-center gap-2">
+          <SubjectIcon name={meta.subject} size={16} />
+          <span>{meta.subject} · {meta.level ?? meta.form} · {meta.topic ?? meta.title}</span>
+        </div>
         <span>{answered} / {questions.length} answered</span>
       </div>
-      <div className="mb-4"><ProgressBar value={fillPct}/></div>
+      <div className="mb-4"><ProgressBar value={fillPct} /></div>
 
       {questions.map((q, i) => (
         <div key={i} className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg">
-          <p className="font-semibold mb-4 text-lg">{i+1}. {q.question ?? q.text}</p>
+          <p className="font-semibold mb-4 text-lg">{i + 1}. {q.question ?? q.text}</p>
           <div className="space-y-3">
             {q.options.map((opt, j) => (
               <label key={j} onClick={() => select(i, j)}
-                className={`flex items-center gap-3 cursor-pointer p-3 rounded-md border transition ${optionStyle(i,j)}`}>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${answers[i]===j?"border-[#2ea043] bg-[#2ea043]":"border-[#6e7681]"}`}>
-                  {answers[i]===j && <div className="w-2 h-2 bg-white rounded-full"/>}
+                className={`flex items-center gap-3 cursor-pointer p-3 rounded-md border transition ${optionStyle(i, j)}`}>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${answers[i] === j ? "border-[#2ea043] bg-[#2ea043]" : "border-[#6e7681]"}`}>
+                  {answers[i] === j && <div className="w-2 h-2 bg-white rounded-full" />}
                 </div>
                 <span>{opt}</span>
-                {score !== null && <span className="ml-auto">{(q.correct??q.answer)===j?"✅":answers[i]===j?"❌":""}</span>}
+                {score !== null && <span className="ml-auto">{(q.correct ?? q.answer) === j ? <FiCheck /> : answers[i] === j ? <FiX /> : ""}</span>}
               </label>
             ))}
           </div>
@@ -565,35 +654,38 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
       <div className="flex gap-3 justify-center mt-6">
         {score === null ? (
           <button onClick={submit}
-            className="bg-[#2ea043] text-white px-8 py-3 rounded-lg hover:bg-[#238636] font-semibold transition">
-            Submit Quiz
+            className="bg-[#2ea043] text-white px-8 py-3 rounded-lg hover:bg-[#238636] font-semibold transition flex items-center gap-2">
+            <FaRegCheckCircle /> Submit Quiz
           </button>
         ) : (
           <div className="w-full space-y-4">
             <div className="bg-[#161b22] border border-[#21262d] p-6 rounded-lg text-center">
-              <div className="text-2xl font-bold text-[#2ea043] mb-1">Quiz Complete! 🎉</div>
+              <div className="text-2xl font-bold text-[#2ea043] mb-1 flex items-center justify-center gap-2">
+                <FaTrophy /> Quiz Complete! <FaTrophy />
+              </div>
               <div className="text-xl">
-                Score: <span className="font-bold text-[#2ea043]">{score}</span> / {questions.length} ({Math.round((score/questions.length)*100)}%)
+                Score: <span className="font-bold text-[#2ea043]">{score}</span> / {questions.length} ({Math.round((score / questions.length) * 100)}%)
               </div>
               <div className="mb-4 mt-2 max-w-xs mx-auto">
-                <ProgressBar value={Math.round((score/questions.length)*100)}/>
+                <ProgressBar value={Math.round((score / questions.length) * 100)} />
               </div>
-              <div className="text-sm text-[#6e7681]">
-                {score===questions.length ? "Perfect! Excellent work!" : score>=questions.length*0.7 ? "Great job! Keep it up!" : "Good effort! Try again to improve."}
+              <div className="text-sm text-[#6e7681] flex items-center justify-center gap-1">
+                {score === questions.length ? <FiStar className="text-[#e3b341]" /> : score >= questions.length * 0.7 ? <FiCheck className="text-[#2ea043]" /> : <GiBrain className="text-[#58a6ff]" />}
+                {score === questions.length ? " Perfect! Excellent work!" : score >= questions.length * 0.7 ? " Great job! Keep it up!" : " Good effort! Try again to improve."}
               </div>
               <div className="flex gap-3 justify-center mt-4 flex-wrap">
                 <button onClick={() => setShowRecs(r => !r)}
-                  className="bg-[#21262d] border border-[#30363d] text-[#e6edf3] px-4 py-2 rounded-lg hover:border-[#58a6ff] font-semibold text-sm transition">
-                  🤖 {showRecs ? "Hide" : "View"} AI Tips
+                  className="bg-[#21262d] border border-[#30363d] text-[#e6edf3] px-4 py-2 rounded-lg hover:border-[#58a6ff] font-semibold text-sm transition flex items-center gap-2">
+                  <FaRobot /> {showRecs ? "Hide" : "View"} AI Tips
                 </button>
                 <button onClick={onDone}
-                  className="bg-[#2ea043] text-white px-6 py-2 rounded-lg hover:bg-[#238636] font-semibold transition">
-                  🔄 Back
+                  className="bg-[#2ea043] text-white px-6 py-2 rounded-lg hover:bg-[#238636] font-semibold transition flex items-center gap-2">
+                  <VscDebugRestart /> Back
                 </button>
               </div>
             </div>
             {showRecs && (
-              <AIRecommendations subject={meta.subject} topic={meta.topic??meta.title} score={score} total={questions.length}/>
+              <AIRecommendations subject={meta.subject} topic={meta.topic ?? meta.title} score={score} total={questions.length} />
             )}
           </div>
         )}
@@ -605,10 +697,10 @@ function QuizRunner({ questions, meta, onDone, source, quizId, isSaved }) {
 // ── AI Tab ────────────────────────────────────────────────────────────────────
 function AITab() {
   const [subject, setSubject] = useState("");
-  const [level, setLevel]     = useState("");
-  const [topic, setTopic]     = useState("");
-  const [questions, setQ]     = useState([]);
-  const [meta, setMeta]       = useState(null);
+  const [level, setLevel] = useState("");
+  const [topic, setTopic] = useState("");
+  const [questions, setQ] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const topics = subject ? (SUBJECT_TOPICS[subject] ?? []) : [];
@@ -621,11 +713,11 @@ function AITab() {
     setLoading(true); setQ([]); setMeta(null);
     try {
       const res = await fetch(`${API_BASE}/quizzes/generate`, {
-        method:"POST", headers: authHdr(),
+        method: "POST", headers: authHdr(),
         body: JSON.stringify({ subject, level, topic }),
       });
       if (!res.ok) {
-        const d = await res.json().catch(()=>({}));
+        const d = await res.json().catch(() => ({}));
         showToast(d?.message ?? "Failed to generate quiz. Please try again.", "error");
         return;
       }
@@ -638,7 +730,7 @@ function AITab() {
   };
 
   if (meta && questions.length > 0) {
-    return <QuizRunner questions={questions} meta={meta} source="AI" onDone={() => { setQ([]); setMeta(null); }}/>;
+    return <QuizRunner questions={questions} meta={meta} source="AI" onDone={() => { setQ([]); setMeta(null); }} />;
   }
 
   return (
@@ -662,14 +754,15 @@ function AITab() {
           </select>
         </div>
         <button onClick={generate} disabled={loading}
-          className="bg-[#2ea043] text-white px-6 py-3 rounded-lg hover:bg-[#238636] font-semibold disabled:opacity-50 transition">
-          {loading ? "⏳ Generating..." : "🤖 Generate Quiz"}
+          className="bg-[#2ea043] text-white px-6 py-3 rounded-lg hover:bg-[#238636] font-semibold disabled:opacity-50 transition flex items-center gap-2">
+          {loading ? <FiLoader className="animate-spin" /> : <FaRobot />}
+          {loading ? " Generating..." : " Generate Quiz"}
         </button>
       </div>
       {loading && (
         <div className="text-center py-12">
           <div className="text-[#8b949e] text-sm">Generating your quiz, please wait...</div>
-          <div className="mt-3 w-8 h-8 border-2 border-[#2ea043] border-t-transparent rounded-full animate-spin mx-auto"/>
+          <div className="mt-3 w-8 h-8 border-2 border-[#2ea043] border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       )}
     </div>
@@ -678,21 +771,21 @@ function AITab() {
 
 // ── Teacher Quizzes Tab ───────────────────────────────────────────────────────
 function TeacherQuizzesTab() {
-  const [quizzes, setQuizzes]       = useState([]);
-  const [offline, setOffline]       = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [quizzes, setQuizzes] = useState([]);
+  const [offline, setOffline] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeQuiz, setActiveQuiz] = useState(null);
-  const [subTab, setSubTab]         = useState("online");
-  const [search, setSearch]         = useState("");
+  const [subTab, setSubTab] = useState("online");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
         const [onRes, offRes] = await Promise.all([
-          fetch(`${API_BASE}/quizzes/available`,         { headers: authHdr() }),
+          fetch(`${API_BASE}/quizzes/available`, { headers: authHdr() }),
           fetch(`${API_BASE}/quizzes/available/offline`, { headers: authHdr() }),
         ]);
-        if (onRes.ok)  setQuizzes(await onRes.json());
+        if (onRes.ok) setQuizzes(await onRes.json());
         if (offRes.ok) setOffline(await offRes.json());
       } catch {
         showToast("Failed to load quizzes.", "error");
@@ -712,18 +805,23 @@ function TeacherQuizzesTab() {
     );
   }
 
-  const onlineFiltered  = quizzes.filter(q => q.title?.toLowerCase().includes(search.toLowerCase()) || q.subject?.toLowerCase().includes(search.toLowerCase()));
+  const onlineFiltered = quizzes.filter(q => q.title?.toLowerCase().includes(search.toLowerCase()) || q.subject?.toLowerCase().includes(search.toLowerCase()));
   const offlineFiltered = offline.filter(q => q.title?.toLowerCase().includes(search.toLowerCase()) || q.subject?.toLowerCase().includes(search.toLowerCase()));
-  const formatDate = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+  const formatDate = d => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
   const QuizCard = ({ quiz, isOffline }) => (
     <div className="bg-[#161b22] border border-[#21262d] rounded-lg p-5 hover:border-[#2ea043] transition">
       <div className="flex items-start justify-between mb-3">
         <div className="flex gap-2 flex-wrap">
-          <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1a3a2a] text-[#2ea043]">{quiz.subject}</span>
-          <span className="text-xs px-2 py-0.5 rounded border border-[#21262d] text-[#6e7681]">{quiz.form}</span>
-          <span className="text-xs px-2 py-0.5 rounded" style={{backgroundColor:quiz.visibility==="PUBLIC"?"#1a2a3a":"#2a1a3a",color:quiz.visibility==="PUBLIC"?"#58a6ff":"#a371f7"}}>
-            {quiz.visibility==="PUBLIC"?"🌐 Public":"🔒 School"}
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1a3a2a] text-[#2ea043] flex items-center gap-1">
+            <SubjectIcon name={quiz.subject} size={12} /> {quiz.subject}
+          </span>
+          <span className="text-xs px-2 py-0.5 rounded border border-[#21262d] text-[#6e7681] flex items-center gap-1">
+            <SiLevelsdotfyi /> {quiz.form}
+          </span>
+          <span className="text-xs px-2 py-0.5 rounded flex items-center gap-1" style={{ backgroundColor: quiz.visibility === "PUBLIC" ? "#1a2a3a" : "#2a1a3a", color: quiz.visibility === "PUBLIC" ? "#58a6ff" : "#a371f7" }}>
+            {quiz.visibility === "PUBLIC" ? <MdQuiz /> : <MdOutlineQuiz />}
+            {quiz.visibility === "PUBLIC" ? " Public" : " School"}
           </span>
         </div>
         <span className="text-xs text-[#6e7681]">{quiz.duration}</span>
@@ -731,16 +829,18 @@ function TeacherQuizzesTab() {
       <h3 className="font-semibold text-[#e6edf3] mb-1">{quiz.title}</h3>
       {quiz.description && <p className="text-xs text-[#6e7681] mb-3 line-clamp-2">{quiz.description}</p>}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-[#6e7681]">❓ {quiz.questions?.length ?? 0} questions · 📅 {formatDate(quiz.createdAt)}</span>
+        <span className="text-xs text-[#6e7681] flex items-center gap-1">
+          <MdQuiz /> {quiz.questions?.length ?? 0} questions · 📅 {formatDate(quiz.createdAt)}
+        </span>
         {isOffline ? (
           <button onClick={() => window.print()}
-            className="bg-[#1a2a3a] border border-[#58a6ff] text-[#58a6ff] text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#2a3a4a] transition">
-            ⬇️ Print / Download
+            className="bg-[#1a2a3a] border border-[#58a6ff] text-[#58a6ff] text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#2a3a4a] transition flex items-center gap-1">
+            <IoPrintOutline /> Print / Download
           </button>
         ) : (
           <button onClick={() => setActiveQuiz(quiz)}
-            className="bg-[#2ea043] text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#3fb950] transition">
-            ▶ Take Quiz
+            className="bg-[#2ea043] text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-[#3fb950] transition flex items-center gap-1">
+            <FiPlay size={12} /> Take Quiz
           </button>
         )}
       </div>
@@ -749,26 +849,29 @@ function TeacherQuizzesTab() {
 
   return (
     <div>
-      <input type="text" placeholder="Search quizzes..." value={search} onChange={e=>setSearch(e.target.value)}
-        className="w-full mb-4 border-2 border-[#21262d] bg-[#161b22] text-[#e6edf3] rounded-lg px-4 py-2 focus:border-[#2ea043] outline-none"/>
+      <div className="relative mb-4">
+        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6e7681]" size={16} />
+        <input type="text" placeholder="Search quizzes..." value={search} onChange={e => setSearch(e.target.value)}
+          className="w-full border-2 border-[#21262d] bg-[#161b22] text-[#e6edf3] rounded-lg pl-10 pr-4 py-2 focus:border-[#2ea043] outline-none" />
+      </div>
       <div className="flex gap-2 mb-6">
-        {[["online","🌐 Online Quizzes"],["offline","📄 Offline / Print"]].map(([key,label]) => (
+        {[["online", <MdQuiz key="online-icon" />, " Online Quizzes"], ["offline", <IoPrintOutline key="offline-icon" />, " Print / Offline"]].map(([key, icon, label]) => (
           <button key={key} onClick={() => setSubTab(key)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition"
-            style={{backgroundColor:subTab===key?"#2ea043":"#161b22",color:subTab===key?"#fff":"#8b949e",border:`1px solid ${subTab===key?"#2ea043":"#21262d"}`}}>
-            {label}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1"
+            style={{ backgroundColor: subTab === key ? "#2ea043" : "#161b22", color: subTab === key ? "#fff" : "#8b949e", border: `1px solid ${subTab === key ? "#2ea043" : "#21262d"}` }}>
+            {icon} {label}
           </button>
         ))}
       </div>
       {loading
         ? <div className="text-center py-12 text-[#8b949e]">Loading quizzes...</div>
-        : subTab==="online"
-          ? onlineFiltered.length===0
+        : subTab === "online"
+          ? onlineFiltered.length === 0
             ? <div className="text-center py-12 text-[#6e7681]">No online quizzes available.</div>
-            : <div className="grid md:grid-cols-2 gap-4">{onlineFiltered.map(q=><QuizCard key={q.id} quiz={q} isOffline={false}/>)}</div>
-          : offlineFiltered.length===0
+            : <div className="grid md:grid-cols-2 gap-4">{onlineFiltered.map(q => <QuizCard key={q.id} quiz={q} isOffline={false} />)}</div>
+          : offlineFiltered.length === 0
             ? <div className="text-center py-12 text-[#6e7681]">No offline quizzes available.</div>
-            : <div className="grid md:grid-cols-2 gap-4">{offlineFiltered.map(q=><QuizCard key={q.id} quiz={q} isOffline={true}/>)}</div>
+            : <div className="grid md:grid-cols-2 gap-4">{offlineFiltered.map(q => <QuizCard key={q.id} quiz={q} isOffline={true} />)}</div>
       }
     </div>
   );
@@ -777,8 +880,8 @@ function TeacherQuizzesTab() {
 // ── History Tab ───────────────────────────────────────────────────────────────
 function HistoryTab() {
   const [attempts, setAttempts] = useState([]);
-  const [stats, setStats]       = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -789,7 +892,7 @@ function HistoryTab() {
         ]);
         if (aRes.ok) setAttempts(await aRes.json());
         if (sRes.ok) setStats(await sRes.json());
-      } catch {}
+      } catch { }
       finally { setLoading(false); }
     };
     load();
@@ -797,8 +900,8 @@ function HistoryTab() {
 
   const formatDate = d => {
     if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " " +
-           new Date(d).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " " +
+      new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
   if (loading) return <div className="text-center py-12 text-[#8b949e]">Loading history...</div>;
@@ -808,13 +911,13 @@ function HistoryTab() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { label:"Total Quizzes",   value: stats.total },
-            { label:"Average Score",   value: `${stats.avgScore}%` },
-            { label:"AI Quizzes",      value: stats.aiCount },
-            { label:"Teacher Quizzes", value: stats.teacherCount },
-          ].map((s,i) => (
+            { label: "Total Quizzes", value: stats.total, icon: <MdQuiz /> },
+            { label: "Average Score", value: `${stats.avgScore}%`, icon: <TbProgressCheck /> },
+            { label: "AI Quizzes", value: stats.aiCount, icon: <FaRobot /> },
+            { label: "Teacher Quizzes", value: stats.teacherCount, icon: <GiTeacher /> },
+          ].map((s, i) => (
             <div key={i} className="bg-[#161b22] border border-[#21262d] p-4 rounded-lg text-center">
-              <div className="text-2xl font-bold text-[#2ea043]">{s.value}</div>
+              <div className="text-2xl font-bold text-[#2ea043] flex items-center justify-center gap-2">{s.icon} {s.value}</div>
               <div className="text-xs text-[#6e7681] mt-1">{s.label}</div>
             </div>
           ))}
@@ -827,8 +930,13 @@ function HistoryTab() {
           {attempts.map(a => (
             <div key={a.id} className="bg-[#161b22] border border-[#21262d] p-4 rounded-lg flex justify-between items-start hover:border-[#2ea043] transition">
               <div>
-                <div className="font-semibold text-[#e6edf3]">{a.subject}{a.topic ? ` — ${a.topic}` : ""}</div>
-                <div className="text-sm text-[#6e7681]">{a.level} · {a.source==="AI"?"🤖 AI Generated":"👩‍🏫 Teacher Quiz"}</div>
+                <div className="font-semibold text-[#e6edf3] flex items-center gap-2">
+                  <SubjectIcon name={a.subject} size={16} />
+                  {a.subject}{a.topic ? ` — ${a.topic}` : ""}
+                </div>
+                <div className="text-sm text-[#6e7681] flex items-center gap-1 mt-1">
+                  <MdSchool /> {a.level} · {a.source === "AI" ? <><FaRobot className="inline" /> AI Generated</> : <><GiTeacher className="inline" /> Teacher Quiz</>}
+                </div>
                 <div className="text-xs text-[#6e7681] mt-1">{formatDate(a.completedAt)}</div>
               </div>
               <div className="text-right">
@@ -845,22 +953,24 @@ function HistoryTab() {
 
 // ── Main Quiz Page ────────────────────────────────────────────────────────────
 const Quiz = () => {
-  const [tab, setTab]           = useState("ai");
+  const [tab, setTab] = useState("ai");
   const [retakeQuiz, setRetake] = useState(null);
 
   const tabs = [
-    { key: "ai",       label: "🤖 AI Quiz" },
-    { key: "saved",    label: "💾 Saved AI" },
-    { key: "teacher",  label: "👩‍🏫 Teacher Quizzes" },
-    { key: "progress", label: "📊 My Progress" },
-    { key: "history",  label: "🕐 History" },
+    { key: "ai", label: "AI Quiz", icon: <FaRobot /> },
+    { key: "saved", label: "Saved AI", icon: <MdSave /> },
+    { key: "teacher", label: "Teacher Quizzes", icon: <GiTeacher /> },
+    { key: "progress", label: "My Progress", icon: <FaChartLine /> },
+    { key: "history", label: "History", icon: <MdHistory /> },
   ];
 
   if (retakeQuiz) {
     return (
       <div className="bg-[#0d1117] min-h-screen p-6 text-[#e6edf3]">
         <ToastContainer />
-        <button onClick={() => setRetake(null)} className="mb-4 text-sm text-[#58a6ff] hover:underline">← Back to Saved Quizzes</button>
+        <button onClick={() => setRetake(null)} className="mb-4 text-sm text-[#58a6ff] hover:underline flex items-center gap-1">
+          <FiArrowLeft /> Back to Saved Quizzes
+        </button>
         <QuizRunner
           questions={retakeQuiz.questions}
           meta={{ subject: retakeQuiz.subject, level: retakeQuiz.form ?? retakeQuiz.level, topic: retakeQuiz.title ?? retakeQuiz.topic }}
@@ -876,26 +986,28 @@ const Quiz = () => {
   return (
     <div className="bg-[#0d1117] min-h-screen p-6 text-[#e6edf3]">
       <ToastContainer />
-      <h1 className="text-2xl font-bold text-[#2ea043] mb-6">🧠 Quizzes</h1>
+      <h1 className="text-2xl font-bold text-[#2ea043] mb-6 flex items-center gap-2">
+        <FaBrain /> Quizzes
+      </h1>
       <div className="flex gap-1 mb-6 border-b border-[#21262d] pb-0 flex-wrap">
-        {tabs.map(({ key, label }) => (
+        {tabs.map(({ key, label, icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className="px-4 py-2 text-sm font-semibold rounded-t-lg transition -mb-px border border-b-0"
+            className="px-4 py-2 text-sm font-semibold rounded-t-lg transition -mb-px border border-b-0 flex items-center gap-2"
             style={{
-              backgroundColor: tab===key ? "#161b22" : "transparent",
-              color:           tab===key ? "#e6edf3" : "#8b949e",
-              borderColor:     tab===key ? "#21262d" : "transparent",
+              backgroundColor: tab === key ? "#161b22" : "transparent",
+              color: tab === key ? "#e6edf3" : "#8b949e",
+              borderColor: tab === key ? "#21262d" : "transparent",
             }}>
-            {label}
+            {icon} {label}
           </button>
         ))}
       </div>
 
-      {tab === "ai"       && <AITab />}
-      {tab === "saved"    && <SavedAIQuizzesTab onRetake={q => setRetake(q)} />}
-      {tab === "teacher"  && <TeacherQuizzesTab />}
+      {tab === "ai" && <AITab />}
+      {tab === "saved" && <SavedAIQuizzesTab onRetake={q => setRetake(q)} />}
+      {tab === "teacher" && <TeacherQuizzesTab />}
       {tab === "progress" && <ProgressTab />}
-      {tab === "history"  && <HistoryTab />}
+      {tab === "history" && <HistoryTab />}
     </div>
   );
 };
